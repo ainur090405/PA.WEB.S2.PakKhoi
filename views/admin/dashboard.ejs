@@ -1,0 +1,110 @@
+<%- include('../partials/_header', { title: title }) %>
+
+<%- include('../partials/_messages') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="fw-bold text-primary mb-1">
+      <i class="bi bi-speedometer2 me-2"></i>Dashboard Admin
+    </h1>
+    <p class="text-muted mb-0">Selamat datang, <span class="fw-semibold text-dark"><%= user.nama %></span></p>
+  </div>
+  <div class="text-end">
+    <small class="text-muted d-block">Login sebagai Admin</small>
+    <span class="badge bg-success fs-6 px-3 py-2">
+      <i class="bi bi-shield-check me-1"></i>Administrator
+    </span>
+  </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+
+  <div class="col">
+    <div class="card h-100 shadow-sm border-0" style="border-radius: 20px; overflow: hidden; transition: all 0.3s ease;">
+      <div class="card-body text-center p-4">
+        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: grid; place-items: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);">
+          <i class="bi bi-people-fill fs-2 text-white"></i>
+        </div>
+        <h5 class="card-title fw-bold text-dark mb-3">Manajemen User</h5>
+        <p class="card-text text-muted small mb-4">
+          Kelola data pengguna sistem termasuk admin dan pemain aktif.
+        </p>
+        <a href="/users" class="btn btn-primary w-100" style="border-radius: 15px; font-weight: 600; padding: 12px; background: linear-gradient(135deg, #667eea, #764ba2); border: none;">
+          <i class="bi bi-gear me-2"></i>Kelola User
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card h-100 shadow-sm border-0" style="border-radius: 20px; overflow: hidden; transition: all 0.3s ease;">
+      <div class="card-body text-center p-4">
+        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #f093fb, #f5576c); border-radius: 50%; display: grid; place-items: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(240, 147, 251, 0.3);">
+          <i class="bi bi-dribbble fs-2 text-white"></i>
+        </div>
+        <h5 class="card-title fw-bold text-dark mb-3">Manajemen Arena</h5>
+        <p class="card-text text-muted small mb-4">
+          Tambah, edit, dan hapus data arena olahraga di seluruh Sumenep.
+        </p>
+        <a href="/arena" class="btn btn-success w-100" style="border-radius: 15px; font-weight: 600; padding: 12px; background: linear-gradient(135deg, #f093fb, #f5576c); border: none;">
+          <i class="bi bi-plus-circle me-2"></i>Kelola Arena
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card h-100 shadow-sm border-0" style="border-radius: 20px; overflow: hidden; transition: all 0.3s ease;">
+      <div class="card-body text-center p-4">
+        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #4facfe, #00f2fe); border-radius: 50%; display: grid; place-items: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);">
+          <i class="bi bi-calendar-week-fill fs-2 text-white"></i>
+        </div>
+        <h5 class="card-title fw-bold text-dark mb-3">Manajemen Jadwal</h5>
+        <p class="card-text text-muted small mb-4">
+          Atur slot waktu dan ketersediaan jadwal untuk setiap arena.
+        </p>
+        <a href="/jadwal" class="btn btn-info w-100" style="border-radius: 15px; font-weight: 600; padding: 12px; background: linear-gradient(135deg, #4facfe, #00f2fe); border: none; color: white;">
+          <i class="bi bi-calendar-event me-2"></i>Kelola Jadwal
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card h-100 shadow-sm border-0" style="border-radius: 20px; overflow: hidden; transition: all 0.3s ease;">
+      <div class="card-body text-center p-4">
+        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #43e97b, #38f9d7); border-radius: 50%; display: grid; place-items: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(67, 233, 123, 0.3);">
+          <i class="bi bi-journal-check fs-2 text-white"></i>
+        </div>
+        <h5 class="card-title fw-bold text-dark mb-3">Manajemen Reservasi</h5>
+        <p class="card-text text-muted small mb-4">
+          Konfirmasi atau tolak booking yang masuk dari pengguna.
+        </p>
+        <a href="/admin/reservasi" class="btn btn-warning w-100" style="border-radius: 15px; font-weight: 600; padding: 12px; background: linear-gradient(135deg, #43e97b, #38f9d7); border: none; color: white;">
+          <i class="bi bi-check-circle me-2"></i>Kelola Reservasi
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card h-100 shadow-sm border-0" style="border-radius: 20px; overflow: hidden; transition: all 0.3s ease;">
+      <div class="card-body text-center p-4">
+        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #fa709a, #fee140); border-radius: 50%; display: grid; place-items: center; margin: 0 auto 1rem; box-shadow: 0 8px 20px rgba(250, 112, 154, 0.3);">
+          <i class="bi bi-cash-coin fs-2 text-white"></i>
+        </div>
+        <h5 class="card-title fw-bold text-dark mb-3">Konfirmasi Pembayaran</h5>
+        <p class="card-text text-muted small mb-4">
+          Verifikasi pembayaran COD dan transaksi online pengguna.
+        </p>
+        <a href="/admin/pembayaran" class="btn btn-danger w-100" style="border-radius: 15px; font-weight: 600; padding: 12px; background: linear-gradient(135deg, #fa709a, #fee140); border: none; color: white;">
+          <i class="bi bi-credit-card me-2"></i>Kelola Pembayaran
+        </a>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+<%- include('../partials/_footer') %>

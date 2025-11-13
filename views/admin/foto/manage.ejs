@@ -1,0 +1,81 @@
+<%- include('../../partials/_header', { title: title }) %>
+<%- include('../../partials/_messages') %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2><i class="bi bi-images"></i> <%= title %></h2>
+  <a href="/arena" class="btn btn-secondary">
+    <i class="bi bi-arrow-left-circle me-2"></i> Kembali ke Daftar Arena
+  </a>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-light">
+    <strong>Upload Foto Baru</strong>
+  </div>
+  <div class="card-body">
+    <form action="/foto/store/<%= arena.id_arena %>" method="POST" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label for="foto_galeri" class="form-label">Pilih Foto (Bisa lebih dari 1)</label>
+        <input class="form-control" type="file" id="foto_galeri" name="foto_galeri" multiple required>
+        <div class="form-text">Maks 10 foto sekaligus. Hanya .jpg, .jpeg, .png.</div>
+      </div>
+      <div class="mb-3">
+        <label for="deskripsi" class="form-label">Deskripsi Foto (Opsional)</label>
+        <input type="text" class="form-control" id="deskripsi" name="deskripsi" placeholder="Cth: Tampak depan, Kamar ganti, dll.">
+        <div class="form-text">Deskripsi ini akan diterapkan ke semua foto yang di-upload bersamaan.</div>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-upload me-2"></i> Upload Foto
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-light">
+    <strong>Galeri Foto Saat Ini (<%= fotoList.length %>)</strong>
+  </div>
+  <div class="card-body">
+    <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+      
+      <% if (fotoList.length === 0) { %>
+        <div class="col-12">
+          <p class="text-center text-muted">Belum ada foto di galeri ini. Silakan upload.</p>
+        </div>
+      <% } %>
+
+      <% fotoList.forEach(foto => { %>
+        <div class="col">
+          <div class="card h-100 shadow-sm">
+            <img src="<%= foto.url_foto %>" alt="<%= foto.deskripsi %>" style="height: 180px; object-fit: cover;">
+            <div class="card-body">
+              <p class="card-text small"><%= foto.deskripsi || 'Tidak ada deskripsi' %></p>
+            </div>
+
+            <div class="card-footer bg-light p-2 text-center">
+              
+              <% if (arena.id_foto_cover == foto.id_foto) { %>
+                <a href="#" class="btn btn-sm btn-success disabled w-100 mb-1">
+                  <i class="bi bi-check-circle-fill"></i> Foto Cover
+                </a>
+              <% } else { %>
+                <a href="/foto/setcover/<%= arena.id_arena %>/<%= foto.id_foto %>" class="btn btn-sm btn-outline-success w-100 mb-1">
+                  <i class="bi bi-bookmark-star"></i> Set sbg Cover
+                </a>
+              <% } %>
+              
+              <a href="/foto/delete/<%= arena.id_arena %>/<%= foto.id_foto %>" 
+                 class="btn btn-sm btn-outline-danger w-100" 
+                 onclick="return confirm('Yakin hapus foto ini?')">
+                <i class="bi bi-trash"></i> Hapus Foto
+              </a>
+            </div>
+            </div>
+        </div>
+      <% }) %>
+      
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/_footer') %>

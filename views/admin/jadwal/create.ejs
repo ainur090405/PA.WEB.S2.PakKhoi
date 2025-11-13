@@ -1,0 +1,115 @@
+<%- include('../../partials/_header', { title: title }) %>
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h3 class="card-title mb-4"><%= title %></h3>
+        <%- include('../../partials/_messages') %>
+
+        <form action="/jadwal/store" method="POST">
+          <div class="mb-3">
+            <label for="id_arena" class="form-label">1. Pilih Arena</label>
+          <select class="form-select" name="id_arena" id="id_arena" required>
+            <option value="">-- Pilih Arena --</option>
+            <% arenaList.forEach(arena => { %>
+              <option value="<%= arena.id_arena %>">
+                <%= arena.nama_arena %> (<%= arena.jenis_olahraga %>)
+              </option>
+            <% }) %>
+          </select>
+            <div id="jamBukaHelp" class="form-text text-muted">
+              Pilih arena untuk melihat jam operasional.
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="tanggal" class="form-label">2. Pilih Tanggal</label>
+            <input type="date" class="form-control" id="tanggal" name="tanggal" required>
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="jam_mulai" class="form-label">3. Jam Mulai Sesi</label>
+              <input type="time" class="form-control" id="jam_mulai" name="jam_mulai" required disabled>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="jam_selesai" class="form-label">4. Jam Selesai Sesi</label>
+              <input type="time" class="form-control" id="jam_selesai" name="jam_selesai" required disabled>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="status_slot" class="form-label">5. Status Slot Awal</label>
+            <select class="form-select" name="status_slot" id="status_slot" required>
+              <option value="kosong" selected>Kosong</option>
+              <option value="maintenance">Maintenance</option>
+            </select>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Simpan</button>
+          <a href="/jadwal" class="btn btn-secondary">Batal</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Ambil elemen-elemen yang kita butuhkan
+  const arenaSelect = document.getElementById('id_arena');
+  const jamMulaiInput = document.getElementById('jam_mulai');
+  const jamSelesaiInput = document.getElementById('jam_selesai');
+  const jamBukaHelp = document.getElementById('jamBukaHelp');
+
+  // Dengarkan event 'change' pada dropdown arena
+  arenaSelect.addEventListener('change', async function() {
+    const arenaId = this.value;
+
+    if (arenaId) {
+      try {
+        // 1. Ambil data jam buka/tutup dari API yang kita buat
+        const response = await fetch(`/arena/api/${arenaId}`);
+        if (!response.ok) throw new Error('Arena tidak ditemukan');
+        
+        const arena = await response.json();
+        
+        // 2. Tampilkan pesan bantuan
+        jamBukaHelp.textContent = `Jam operasional arena: ${arena.jam_buka} - ${arena.jam_tutup}`;
+        jamBukaHelp.classList.add('text-success', 'fw-bold');
+
+        // 3. Atur batasan (min/max) pada input jam
+        jamMulaiInput.min = arena.jam_buka;
+        jamMulaiInput.max = arena.jam_tutup;
+        
+        jamSelesaiInput.min = arena.jam_buka;
+        jamSelesaiInput.max = arena.jam_tutup;
+
+        // 4. Aktifkan input jam
+        jamMulaiInput.disabled = false;
+        jamSelesaiInput.disabled = false;
+
+      } catch (error) {
+        console.error(error);
+        jamBukaHelp.textContent = 'Gagal memuat jam operasional.';
+        jamBukaHelp.classList.remove('text-success', 'fw-bold');
+        jamMulaiInput.disabled = true;
+        jamSelesaiInput.disabled = true;
+      }
+    } else {
+      // Jika user memilih "-- Pilih Arena --"
+      jamBukaHelp.textContent = 'Pilih arena untuk melihat jam operasional.';
+      jamBukaHelp.classList.remove('text-success', 'fw-bold');
+      jamMulaiInput.disabled = true;
+      jamSelesaiInput.disabled = true;
+    }
+  });
+
+  // Logika tambahan agar Jam Selesai tidak boleh < Jam Mulai
+  jamMulaiInput.addEventListener('change', function() {
+    // Set 'min' untuk jam selesai = jam mulai + 1 menit (atau sesuai kebutuhan)
+    jamSelesaiInput.min = this.value; 
+  });
+
+</script>
+
+<%- include('../../partials/_footer') %>

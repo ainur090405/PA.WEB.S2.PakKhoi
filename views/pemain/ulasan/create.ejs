@@ -1,0 +1,39 @@
+<%- include('../../partials/_header', { title: 'Beri Ulasan' }) %>
+<%- include('../../partials/_messages') %>
+
+<div class="container py-5" style="max-width: 700px;">
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-success text-white">
+      <i class="bi bi-star me-2"></i> Beri Ulasan
+    </div>
+    <div class="card-body">
+      <form action="/pemain/ulasan/create/<%= reservasi.id_reservasi %>" method="POST">
+        <div class="mb-3">
+          <label class="form-label">Arena</label>
+          <input type="text" class="form-control" value="<%= reservasi.nama_arena %>" readonly>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Rating (1 - 5)</label>
+          <select name="rating" class="form-select" required>
+            <option value="">Pilih rating...</option>
+            <% for(let i = 1; i <= 5; i++) { %>
+              <option value="<%= i %>"><%= i %> ★</option>
+            <% } %>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Komentar</label>
+          <textarea name="komentar" class="form-control" rows="3" placeholder="Tulis ulasan Anda..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success w-100">
+          <i class="bi bi-send me-1"></i> Kirim Ulasan
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/_footer') %>

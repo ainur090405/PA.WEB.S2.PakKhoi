@@ -1,0 +1,92 @@
+<%- include('../../partials/_header', { title: title }) %>
+<%- include('../../partials/_messages') %>
+
+<div class="container-fluid">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">
+      <i class="bi bi-dribbble"></i> <%= title %>
+    </h2>
+    <a href="/arena/create" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-2"></i> Tambah Arena Baru
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Foto</th>
+              <th>Nama Arena</th>
+              <th>Jenis Olahraga</th>
+              <th>Lokasi</th>
+              <th>Harga</th>
+              <th>Jam Buka - Tutup</th>
+              <th>Status</th>
+              <th style="width:150px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (data.length > 0) { %>
+              <% data.forEach(arena => { %>
+                <tr>
+                  <td>
+                    <% if (arena.foto_cover) { %>
+                      <img 
+                        src="<%= arena.foto_cover %>" 
+                        alt="<%= arena.nama_arena %>" 
+                        class="rounded" 
+                        style="width: 100px; height: 60px; object-fit: cover;"
+                      >
+                    <% } else { %>
+                      <span class="text-muted small">No Foto</span>
+                    <% } %>
+                  </td>
+                  <td><strong><%= arena.nama_arena %></strong></td>
+                  <td><%= arena.jenis_olahraga %></td>
+                  <td><%= arena.lokasi %></td>
+                  <td>Rp <%= new Intl.NumberFormat('id-ID').format(arena.harga) %></td>
+                  <td><%= arena.jam_buka.substring(0,5) %> - <%= arena.jam_tutup.substring(0,5) %></td>
+                  <td>
+                    <% if (arena.status === 'aktif') { %>
+                      <span class="badge bg-success">Aktif</span>
+                    <% } else { %>
+                      <span class="badge bg-danger">Perbaikan</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <div class="btn-group" role="group">
+                      <a href="/arena/edit/<%= arena.id_arena %>" 
+                         class="btn btn-sm btn-outline-warning" title="Edit Arena">
+                        <i class="bi bi-pencil-fill"></i>
+                      </a>
+                      <a href="/foto/manage/<%= arena.id_arena %>" 
+                         class="btn btn-sm btn-outline-primary" title="Kelola Foto">
+                        <i class="bi bi-images"></i>
+                      </a>
+                      <a href="/arena/delete/<%= arena.id_arena %>" 
+                         class="btn btn-sm btn-outline-danger" 
+                         onclick="return confirm('Yakin hapus arena <%= arena.nama_arena %>?')"
+                         title="Hapus Arena">
+                        <i class="bi bi-trash-fill"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                  <i class="bi bi-exclamation-circle"></i> Belum ada data arena.
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/_footer') %>

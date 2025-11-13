@@ -1,0 +1,40 @@
+<%- include('../../partials/_header', { title: title }) %>
+
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h3 class="card-title mb-4"><%= title %> #<%= reservasi.id_reservasi %></h3>
+        <%- include('../../partials/_messages') %>
+
+        <ul class="list-group list-group-flush mb-3">
+          <li class="list-group-item"><strong>Pemesan:</strong> <%= reservasi.nama_user %></li>
+          <li class="list-group-item"><strong>Arena:</strong> <%= reservasi.nama_arena %></li>
+          <li class="list-group-item"><strong>Waktu Main:</strong> <%= new Date(reservasi.tanggal).toLocaleDateString('id-ID') %>, jam <%= reservasi.jam_mulai.substring(0,5) %></li>
+        </ul>
+
+        <form action="/admin/reservasi/update/<%= reservasi.id_reservasi %>" method="POST">
+          <div class="mb-3">
+            <label for="status" class="form-label">Status Reservasi</label>
+            <select class="form-select" name="status" id="status" required>
+              <option value="menunggu" <%= reservasi.status === 'menunggu' ? 'selected' : '' %>>Menunggu</option>
+              <option value="disetujui" <%= reservasi.status === 'disetujui' ? 'selected' : '' %>>Disetujui</option>
+              <option value="ditolak" <%= reservasi.status === 'ditolak' ? 'selected' : '' %>>Ditolak</option>
+              <option value="selesai" <%= reservasi.status === 'selesai' ? 'selected' : '' %>>Selesai</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="catatan" class="form-label">Catatan (Opsional)</label>
+            <textarea class="form-control" id="catatan" name="catatan" rows="2"><%= reservasi.catatan || '' %></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+          <a href="/admin/reservasi" class="btn btn-secondary">Batal</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/_footer') %>

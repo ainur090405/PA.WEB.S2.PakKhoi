@@ -1,0 +1,38 @@
+<%- include('../../partials/_header', { title: 'Edit Ulasan' }) %>
+<%- include('../../partials/_messages') %>
+
+<div class="container py-5" style="max-width: 700px;">
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-warning text-dark">
+      <i class="bi bi-pencil-square me-2"></i> Edit Ulasan
+    </div>
+    <div class="card-body">
+      <form action="/pemain/ulasan/update/<%= reservasi.id_reservasi %>" method="POST">
+        <div class="mb-3">
+          <label class="form-label">Arena</label>
+          <input type="text" class="form-control" value="<%= reservasi.nama_arena %>" readonly>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Rating (1 - 5)</label>
+          <select name="rating" class="form-select" required>
+            <% for(let i = 1; i <= 5; i++) { %>
+              <option value="<%= i %>" <%= i === ulasan.rating ? 'selected' : '' %>><%= i %> ★</option>
+            <% } %>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Komentar</label>
+          <textarea name="komentar" class="form-control" rows="3"><%= ulasan.komentar %></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-warning w-100 text-white">
+          <i class="bi bi-save me-1"></i> Simpan Perubahan
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/_footer') %>

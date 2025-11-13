@@ -1,0 +1,111 @@
+
+    /* === BODY === */
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f5f6f7;
+      padding-top: 80px; /* ruang buat navbar fixed */
+      color: #212529;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* === NAVBAR === */
+    .navbar {
+      background: linear-gradient(90deg, #2f2f2f 0%, #3b3b3b 100%);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+      padding: 0.9rem 0;
+      z-index: 2000;
+    }
+
+    .navbar .container {
+      max-width: 98%;
+    }
+
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: #fff !important;
+      letter-spacing: 0.5px;
+    }
+
+    .navbar-brand span {
+      color: #28c76f;
+    }
+
+    .navbar .nav-link {
+      color: #d9d9d9 !important;
+      font-weight: 500;
+      transition: all 0.25s ease;
+      font-size: 1.05rem;
+      padding: 8px 16px;
+    }
+
+    .navbar .nav-link:hover,
+    .navbar .nav-link:focus {
+      color: #fff !important;
+      text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+    }
+
+    /* === DROPDOWN === */
+    .dropdown-menu {
+      border: none;
+      border-radius: 0.6rem;
+      background-color: #fff;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+      z-index: 3000 !important;
+    }
+
+    .dropdown-item {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .dropdown-item:hover {
+      background-color: #e8f7ef;
+      color: #28c76f !important;
+    }
+
+    /* === BUTTONS === */
+    .btn-success {
+      background-color: #28c76f;
+      border: none;
+      border-radius: 50px;
+      padding: 7px 20px;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: 0.3s;
+      margin-left: 10px;
+    }
+
+    .btn-success:hover {
+      background-color: #23b866;
+      transform: translateY(-1px);
+    }
+
+    main.container {
+      background: transparent;
+      padding: 1.5rem 0;
+    }
+
+    footer {
+      text-align: center;
+      color: #6c757d;
+      margin-top: 3rem;
+      padding: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 992px) {
+      .navbar-nav .btn {
+        margin-top: 8px;
+      }
+    }
+   main {
+    flex: 1;
+}
+   html, body {
+    height: 100%;
+}

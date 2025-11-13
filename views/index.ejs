@@ -1,0 +1,169 @@
+<%- include('partials/_header', { title: title }) %>
+<%- include('partials/_messages') %>
+
+<style>
+  body {
+    background: linear-gradient(180deg, #f1f3f4 0%, #f9f9f9 100%);
+  }
+
+  .hero-section {
+    background-image: url('https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=1935&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  .hero-overlay {
+    background: rgba(20, 20, 20, 0.55);
+    backdrop-filter: blur(2px);
+    border-radius: 20px;
+  }
+
+  .section-title {
+    font-weight: 700;
+    color: #444;
+  }
+
+  .icon-square {
+    width: 60px;
+    height: 60px;
+    display: grid;
+    place-items: center;
+    border-radius: 15px;
+    background: #f1f1f1;
+  }
+
+  .card {
+    border: none;
+    border-radius: 20px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  .album {
+    background: #f2f2f2;
+  }
+</style>
+<!-- Hero -->
+<div class="hero-section p-5 mb-5 text-center shadow">
+  <div class="container-fluid py-5 hero-overlay">
+    <h1 class="display-4 fw-bold text-white">Booking Arena, Anti Ribet</h1>
+    <p class="fs-4 text-light col-md-8 mx-auto">
+      Temukan dan pesan lapangan Futsal, Badminton, atau Basket di Sumenep dengan satu klik.
+    </p>
+    <a class="btn btn-success btn-lg mt-3 shadow-sm" href="/venues" role="button">
+      <i class="bi bi-search me-2"></i> Cari Arena Sekarang
+    </a>
+  </div>
+</div>
+
+<!-- Cara Kerja -->
+<div class="container px-4 py-5">
+  <h2 class="pb-2 border-bottom text-center section-title">Cara Kerjanya Sederhana</h2>
+  <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
+    <div class="col d-flex align-items-start">
+      <div class="icon-square me-3 fs-2 text-primary">
+        <i class="bi bi-search-heart"></i>
+      </div>
+      <div>
+        <h4>1. Cari Arena</h4>
+        <p>Lihat semua arena yang tersedia, filter berdasarkan lokasi dan jenis olahraga.</p>
+      </div>
+    </div>
+    <div class="col d-flex align-items-start">
+      <div class="icon-square me-3 fs-2 text-success">
+        <i class="bi bi-calendar2-check"></i>
+      </div>
+      <div>
+        <h4>2. Pilih Jadwal</h4>
+        <p>Lihat jadwal kosong secara real-time dan pilih jam main Anda.</p>
+      </div>
+    </div>
+    <div class="col d-flex align-items-start">
+      <div class="icon-square me-3 fs-2 text-danger">
+        <i class="bi bi-dribbble"></i>
+      </div>
+      <div>
+        <h4>3. Booking & Main</h4>
+        <p>Login, lakukan booking, dan dapatkan konfirmasi. Anda siap bermain!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rekomendasi -->
+<div class="album py-5">
+  <div class="container">
+    <h2 class="text-center mb-4 section-title">Rekomendasi Arena Teratas</h2>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+      <% if (arenas.length > 0) { %>
+        <% arenas.forEach(arena => { %>
+          <div class="col">
+            <div class="card shadow-sm h-100">
+              <img src="<%= arena.foto_cover ? arena.foto_cover : 'https://via.placeholder.com/400x250.png?text=Foto+Belum+Ada' %>" class="card-img-top" alt="<%= arena.nama_arena %>" style="height: 225px; object-fit: cover;">
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title"><%= arena.nama_arena %></h5>
+                <p class="card-text text-muted small flex-grow-1">
+                  <i class="bi bi-geo-alt-fill me-1"></i> <%= arena.lokasi %>
+                </p>
+                <p class="card-text text-primary fw-bold small">
+                  <i class="bi bi-cash me-1"></i> Rp <%= arena.harga ? arena.harga.toLocaleString('id-ID') : 'Belum ditentukan' %>
+                </p>
+                <span class="badge bg-primary mb-3"><%= arena.jenis_olahraga %></span>
+                <a href="/venues/detail/<%= arena.id_arena %>" class="btn btn-success stretched-link mt-auto">
+                  Lihat Jadwal
+                </a>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <p class="text-center text-muted">Belum ada arena yang ditambahkan oleh Admin.</p>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- Statistik -->
+<section class="py-5 text-center" style="background:#e9ecef;">
+  <div class="container">
+    <h2 class="fw-bold mb-4 text-secondary">Kenapa Pilih ArenaGo?</h2>
+    <div class="row row-cols-1 row-cols-md-4 g-4">
+      <div class="col">
+        <div class="p-4 bg-white rounded-4 shadow-sm">
+          <i class="bi bi-geo-alt-fill text-primary fs-1 mb-2"></i>
+          <h4>+25</h4>
+          <p class="text-muted">Arena Tersedia</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="p-4 bg-white rounded-4 shadow-sm">
+          <i class="bi bi-people-fill text-success fs-1 mb-2"></i>
+          <h4>+500</h4>
+          <p class="text-muted">Pengguna Aktif</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="p-4 bg-white rounded-4 shadow-sm">
+          <i class="bi bi-calendar2-check text-warning fs-1 mb-2"></i>
+          <h4>+1.200</h4>
+          <p class="text-muted">Booking Selesai</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="p-4 bg-white rounded-4 shadow-sm">
+          <i class="bi bi-star-fill text-danger fs-1 mb-2"></i>
+          <h4>4.9/5</h4>
+          <p class="text-muted">Rating Pengguna</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<%- include('partials/_footer') %>

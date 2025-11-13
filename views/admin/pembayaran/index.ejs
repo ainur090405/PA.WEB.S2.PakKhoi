@@ -1,0 +1,253 @@
+<%- include('../../partials/_header', { title: title }) %>
+<%- include('../../partials/_messages') %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="fw-bold text-primary mb-1">
+      <i class="bi bi-cash-coin me-2"></i><%= title %>
+    </h2>
+    <p class="text-muted mb-0">Kelola konfirmasi pembayaran dari pengguna</p>
+  </div>
+  <div class="text-end">
+    <span class="badge fs-6 px-3 py-2" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+      <i class="bi bi-clock me-1"></i><%= data.filter(p => p.status_pembayaran === 'pending').length %> Menunggu
+    </span>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0" style="border-radius: 20px; overflow: hidden;">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+          <tr>
+            <th class="border-0 fw-bold text-dark ps-4 py-3">ID Pembayaran</th>
+            <th class="border-0 fw-bold text-dark py-3">Pemesan</th>
+            <th class="border-0 fw-bold text-dark py-3">Arena</th>
+            <th class="border-0 fw-bold text-dark py-3">Metode</th>
+            <th class="border-0 fw-bold text-dark py-3">Jumlah</th>
+            <th class="border-0 fw-bold text-dark py-3">Tanggal</th>
+            <th class="border-0 fw-bold text-dark py-3">Status</th>
+            <th class="border-0 fw-bold text-dark py-3 pe-4">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% data.forEach(p => { %>
+            <tr style="border-bottom: 1px solid #f1f3f4;">
+              <td class="ps-4 py-3">
+                <span class="fw-semibold text-primary">#<%= p.id_pembayaran %></span>
+              </td>
+              <td class="py-3">
+                <div class="d-flex align-items-center">
+                  <div style="width: 35px; height: 35px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: grid; place-items: center; margin-right: 10px;">
+                    <i class="bi bi-person-fill text-white" style="font-size: 14px;"></i>
+                  </div>
+                  <span class="fw-medium"><%= p.nama_user %></span>
+                </div>
+              </td>
+              <td class="py-3">
+                <span class="fw-medium text-dark"><%= p.nama_arena %></span>
+              </td>
+              <td class="py-3">
+                <% if(p.metode_pembayaran == 'cod') { %>
+                  <span class="badge" style="background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; padding: 6px 12px;">
+                    <i class="bi bi-cash me-1"></i>COD
+                  </span>
+                <% } else if (p.metode_pembayaran == 'midtrans') { %>
+                  <span class="badge" style="background: linear-gradient(135deg, #f093fb, #f5576c); border-radius: 15px; padding: 6px 12px;">
+                    <i class="bi bi-credit-card me-1"></i>Midtrans
+                  </span>
+                <% } %>
+              </td>
+              <td class="py-3">
+                <span class="fw-bold text-success">Rp <%= p.jumlah.toLocaleString('id-ID') %></span>
+              </td>
+              <td class="py-3">
+                <small class="text-muted"><%= new Date(p.tanggal_pembayaran).toLocaleDateString('id-ID') %></small>
+              </td>
+              <td class="py-3">
+                <% if(p.status_pembayaran == 'paid' || p.status_pembayaran == 'confirmed') { %>
+                  <span class="badge" style="background: linear-gradient(135deg, #43e97b, #38f9d7); border-radius: 15px; padding: 6px 12px; color: white;">
+                    <i class="bi bi-check-circle-fill me-1"></i>Dikonfirmasi
+                  </span>
+                <% } else if (p.status_pembayaran == 'pending') { %>
+                  <span class="badge" style="background: linear-gradient(135deg, #fa709a, #fee140); border-radius: 15px; padding: 6px 12px; color: white;">
+                    <i class="bi bi-clock-fill me-1"></i>Menunggu
+                  </span>
+                <% } else { %>
+                  <span class="badge" style="background: linear-gradient(135deg, #ff6b6b, #ee5a52); border-radius: 15px; padding: 6px 12px; color: white;">
+                    <i class="bi bi-x-circle-fill me-1"></i>Ditolak
+                  </span>
+                <% } %>
+              </td>
+              <td class="py-3 pe-4">
+                <% if(p.status_pembayaran == 'pending') { %>
+                  <% if(p.metode_pembayaran == 'cod') { %>
+                    <button class="btn btn-sm me-1 confirm-cod-btn" style="background: linear-gradient(135deg, #43e97b, #38f9d7); border: none; border-radius: 10px; color: white; font-weight: 600;" data-id="<%= p.id_pembayaran %>">
+                      <i class="bi bi-check-circle me-1"></i>Konfirmasi COD
+                    </button>
+                  <% } else { %>
+                    <button class="btn btn-sm me-1" style="background: linear-gradient(135deg, #43e97b, #38f9d7); border: none; border-radius: 10px; color: white; font-weight: 600;" data-bs-toggle="modal" data-bs-target="#confirmModal<%= p.id_pembayaran %>">
+                      <i class="bi bi-check-circle me-1"></i>Konfirmasi
+                    </button>
+                  <% } %>
+                  <button class="btn btn-sm" style="background: linear-gradient(135deg, #ff6b6b, #ee5a52); border: none; border-radius: 10px; color: white; font-weight: 600;" data-bs-toggle="modal" data-bs-target="#rejectModal<%= p.id_pembayaran %>">
+                    <i class="bi bi-x-circle me-1"></i>Tolak
+                  </button>
+                <% } else { %>
+                  <span class="text-muted small">-</span>
+                <% } %>
+              </td>
+            </tr>
+
+            <!-- Modal Konfirmasi -->
+            <div class="modal fade" id="confirmModal<%= p.id_pembayaran %>" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Konfirmasi Pembayaran</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <form action="/admin/pembayaran/confirm/<%= p.id_pembayaran %>" method="POST">
+                    <div class="modal-body">
+                      <p>Apakah Anda yakin ingin mengkonfirmasi pembayaran ini?</p>
+                      <div class="mb-3">
+                        <label for="catatan_admin" class="form-label">Catatan (Opsional)</label>
+                        <textarea class="form-control" name="catatan_admin" rows="2"></textarea>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                      <button type="submit" class="btn btn-success">Konfirmasi</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modal Tolak -->
+            <div class="modal fade" id="rejectModal<%= p.id_pembayaran %>" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Tolak Pembayaran</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <form action="/admin/pembayaran/reject/<%= p.id_pembayaran %>" method="POST">
+                    <div class="modal-body">
+                      <p>Apakah Anda yakin ingin menolak pembayaran ini?</p>
+                      <div class="mb-3">
+                        <label for="catatan_admin" class="form-label">Alasan Penolakan</label>
+                        <textarea class="form-control" name="catatan_admin" rows="2" required></textarea>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                      <button type="submit" class="btn btn-danger">Tolak</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/_footer') %>
+
+<script>
+  // Handle COD confirmation with AJAX
+  document.addEventListener('DOMContentLoaded', function() {
+    const codButtons = document.querySelectorAll('.confirm-cod-btn');
+
+    codButtons.forEach(button => {
+      button.addEventListener('click', async function() {
+        const id = this.getAttribute('data-id');
+        const originalText = this.innerHTML;
+
+        // Disable button and show loading
+        this.disabled = true;
+        this.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Memproses...';
+
+        try {
+          const response = await fetch(`/admin/pembayaran/confirm-cod/${id}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            // Show success message
+            showToast('success', result.message);
+
+            // Play success sound (optional)
+            playSuccessSound();
+
+            // Reload page after 2 seconds
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+          } else {
+            throw new Error('Konfirmasi gagal');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          showToast('error', 'Terjadi kesalahan saat mengkonfirmasi pembayaran');
+
+          // Re-enable button
+          this.disabled = false;
+          this.innerHTML = originalText;
+        }
+      });
+    });
+  });
+
+  function showToast(type, message) {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+      <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}-fill me-2"></i>
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      toast.remove();
+    }, 5000);
+  }
+
+  function playSuccessSound() {
+    try {
+      // Create audio context and play success sound
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    } catch (e) {
+      // Ignore audio errors
+      console.log('Audio not supported');
+    }
+  }
+</script>

@@ -1,0 +1,78 @@
+<%- include('../../partials/_header', { title: title }) %>
+<%- include('../../partials/_messages') %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2><i class="bi bi-journal-check"></i> <%= title %></h2>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Pemesan</th>
+            <th>Arena</th>
+            <th>Tanggal Main</th>
+            <th>Jam</th>
+            <th>Tanggal Pesan</th>
+            <th>Status</th>
+            <th>Pembayaran</th>
+            <th>Jumlah</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% data.forEach(r => { %>
+            <tr>
+              <td><%= r.id_reservasi %></td>
+              <td><%= r.nama_user %></td>
+              <td><%= r.nama_arena %></td>
+              <td><%= new Date(r.tanggal).toLocaleDateString('id-ID') %></td>
+              <td><%= r.jam_mulai.substring(0,5) %></td>
+              <td><%= new Date(r.tanggal_pesan).toLocaleDateString('id-ID') %></td>
+              <td>
+                <% if(r.status == 'selesai') { %>
+                  <span class="badge bg-success">Selesai</span>
+                <% } else if (r.status == 'disetujui') { %>
+                  <span class="badge bg-info">Disetujui</span>
+                <% } else if (r.status == 'menunggu') { %>
+                  <span class="badge bg-warning text-dark">Menunggu</span>
+                <% } else { %>
+                  <span class="badge bg-danger">Ditolak</span>
+                <% } %>
+              </td>
+              <td>
+                <% if(r.payment_method == 'cod') { %>
+                  <span class="badge bg-primary">COD</span>
+                <% } else if (r.payment_method == 'midtrans') { %>
+                  <span class="badge bg-secondary">Midtrans</span>
+                <% } else { %>
+                  <span class="badge bg-light text-dark">-</span>
+                <% } %>
+              </td>
+              <td>
+                <% if(r.amount > 0) { %>
+                  Rp <%= r.amount.toLocaleString('id-ID') %>
+                <% } else { %>
+                  -
+                <% } %>
+              </td>
+              <td>
+                <a href="/admin/reservasi/edit/<%= r.id_reservasi %>" class="btn btn-sm btn-outline-warning">
+                  <i class="bi bi-pencil-fill"></i> Edit Status
+                </a>
+                <a href="/admin/reservasi/download" class="btn btn-sm btn-outline-success ms-1">
+                  <i class="bi bi-download"></i> Download
+                </a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/_footer') %>

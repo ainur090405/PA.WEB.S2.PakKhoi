@@ -1,0 +1,72 @@
+<%- include('../../partials/_header', { title: title }) %>
+
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <h3 class="card-title mb-4 text-warning">
+            <i class="bi bi-pencil-square me-2"></i>Edit Arena: <%= arena.nama_arena %>
+          </h3>
+          <%- include('../../partials/_messages') %>
+
+          <form action="/arena/update/<%= arena.id_arena %>" method="POST">
+            <div class="mb-3">
+              <label for="nama_arena" class="form-label">Nama Arena</label>
+              <input type="text" class="form-control" id="nama_arena" name="nama_arena" value="<%= arena.nama_arena %>" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="jenis_olahraga" class="form-label">Jenis Olahraga</label>
+              <input type="text" class="form-control" id="jenis_olahraga" name="jenis_olahraga" value="<%= arena.jenis_olahraga %>" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Galeri Foto</label><br>
+              <a href="/foto/manage/<%= arena.id_arena %>" class="btn btn-outline-primary">
+                <i class="bi bi-images me-2"></i> Kelola Galeri Foto
+              </a>
+            </div>
+
+            <div class="mb-3">
+              <label for="harga" class="form-label">Harga per Sesi (Rp)</label>
+              <input type="number" class="form-control" id="harga" name="harga" value="<%= arena.harga %>">
+            </div>
+
+            <div class="mb-3">
+              <label for="lokasi" class="form-label">Lokasi</label>
+              <input type="text" class="form-control" id="lokasi" name="lokasi" value="<%= arena.lokasi %>">
+            </div>
+
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="jam_buka" class="form-label">Jam Buka</label>
+                <input type="time" class="form-control" id="jam_buka" name="jam_buka" value="<%= arena.jam_buka %>" required>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="jam_tutup" class="form-label">Jam Tutup</label>
+                <input type="time" class="form-control" id="jam_tutup" name="jam_tutup" value="<%= arena.jam_tutup %>" required>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" name="status" id="status" required>
+                  <option value="aktif" <%= arena.status === 'aktif' ? 'selected' : '' %>>Aktif</option>
+                  <option value="perbaikan" <%= arena.status === 'perbaikan' ? 'selected' : '' %>>Perbaikan</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+              <a href="/arena" class="btn btn-outline-secondary me-2">Batal</a>
+              <button type="submit" class="btn btn-warning text-white">
+                <i class="bi bi-save me-2"></i>Update Data
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../../partials/_footer') %>

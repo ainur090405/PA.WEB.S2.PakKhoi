@@ -1,0 +1,236 @@
+<%- include('../partials/_header', { title: title }) %>
+<%- include('../partials/_messages') %>
+
+<style>
+  .dashboard-card {
+    background: #fff;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    transition: 0.3s ease;
+    border: none;
+  }
+
+  .dashboard-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .stat-card h3 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+
+  .stat-card p {
+    margin: 0;
+    font-size: 1.1rem;
+    opacity: 0.9;
+  }
+
+  .welcome-card {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+  }
+
+  .welcome-card h2 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+  }
+
+  .welcome-card p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+  }
+
+  .quick-action {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    transition: 0.3s ease;
+  }
+
+  .quick-action:hover {
+    transform: translateY(-3px);
+    color: white;
+    text-decoration: none;
+  }
+
+  .quick-action i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .recent-booking {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+  }
+
+  .recent-booking h6 {
+    margin-bottom: 5px;
+    color: #28c76f;
+  }
+
+  .recent-booking p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #6c757d;
+  }
+</style>
+
+<div class="container py-4">
+  <!-- Welcome Section -->
+  <div class="welcome-card mb-4">
+    <h2>Selamat Datang, <%= req.session.user ? req.session.user.nama : 'Pemain' %>!</h2>
+    <p>Kelola booking arena olahraga Anda dengan mudah</p>
+  </div>
+
+  <div class="row g-4">
+    <!-- Stats Cards -->
+    <div class="col-md-4">
+      <div class="stat-card">
+        <h3><%= stats.totalBookings || 0 %></h3>
+        <p>Total Booking</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card">
+        <h3><%= stats.activeBookings || 0 %></h3>
+        <p>Booking Aktif</p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card">
+        <h3><%= stats.totalSpent ? stats.totalSpent.toLocaleString('id-ID') : 0 %></h3>
+        <p>Total Pengeluaran</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mt-2">
+    <!-- Quick Actions -->
+    <div class="col-md-6">
+      <div class="dashboard-card h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-3">
+            <i class="bi bi-lightning-charge-fill text-warning me-2"></i>Aksi Cepat
+          </h5>
+          <div class="row g-3">
+            <div class="col-6">
+              <a href="/venues" class="quick-action">
+                <i class="bi bi-search"></i>
+                Cari Arena
+              </a>
+            </div>
+            <div class="col-6">
+              <a href="/pemain/profile" class="quick-action">
+                <i class="bi bi-person"></i>
+                Profil Saya
+              </a>
+            </div>
+            <div class="col-6">
+              <a href="/pemain/profile#bookings" class="quick-action">
+                <i class="bi bi-journal-text"></i>
+                Riwayat Booking
+              </a>
+            </div>
+            <div class="col-6">
+              <a href="/pemain/profile#reviews" class="quick-action">
+                <i class="bi bi-star"></i>
+                Ulasan Saya
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Bookings -->
+    <div class="col-md-6">
+      <div class="dashboard-card h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-3">
+            <i class="bi bi-clock-history text-info me-2"></i>Booking Terbaru
+          </h5>
+          <% if (recentBookings && recentBookings.length > 0) { %>
+            <% recentBookings.slice(0, 3).forEach(booking => { %>
+              <div class="recent-booking">
+                <h6><%= booking.nama_arena %></h6>
+                <p>
+                  <i class="bi bi-calendar me-1"></i><%= new Date(booking.tanggal).toLocaleDateString('id-ID') %>
+                  <i class="bi bi-clock ms-2 me-1"></i><%= booking.jam_mulai.substring(0,5) %>
+                </p>
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="badge bg-<%= booking.status === 'disetujui' ? 'success' : booking.status === 'menunggu' ? 'warning' : 'danger' %>">
+                    <%= booking.status === 'disetujui' ? 'Disetujui' : booking.status === 'menunggu' ? 'Menunggu' : 'Ditolak' %>
+                  </span>
+                  <small class="text-muted">Rp <%= booking.amount.toLocaleString('id-ID') %></small>
+                </div>
+              </div>
+            <% }) %>
+            <% if (recentBookings.length > 3) { %>
+              <div class="text-center">
+                <a href="/pemain/profile" class="btn btn-outline-primary btn-sm">Lihat Semua</a>
+              </div>
+            <% } %>
+          <% } else { %>
+            <div class="text-center py-4">
+              <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+              <p class="text-muted mt-2">Belum ada booking</p>
+              <a href="/venues" class="btn btn-primary">Mulai Booking</a>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications Section -->
+  <% if (notifications && notifications.length > 0) { %>
+  <div class="row g-4 mt-2">
+    <div class="col-12">
+      <div class="dashboard-card">
+        <div class="card-body">
+          <h5 class="card-title mb-3">
+            <i class="bi bi-bell-fill text-danger me-2"></i>Notifikasi (<%= notifications.length %>)
+          </h5>
+          <% notifications.slice(0, 5).forEach(notif => { %>
+            <div class="alert alert-<%= notif.jenis_notif === 'success' ? 'success' : notif.jenis_notif === 'warning' ? 'warning' : 'info' %> alert-dismissible fade show mb-2" role="alert">
+              <strong><%= notif.judul %></strong>
+              <p class="mb-0 mt-1"><%= notif.isi_pesan %></p>
+              <small class="text-muted"><%= new Date(notif.tanggal_kirim).toLocaleDateString('id-ID') %></small>
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+</div>
+
+<%- include('../partials/_footer') %>
+
+<script>
+// Auto refresh notifications every 30 seconds
+setInterval(() => {
+  // Could add AJAX call to refresh notifications
+}, 30000);
+</script>

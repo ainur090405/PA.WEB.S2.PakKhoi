@@ -1,0 +1,88 @@
+<%- include('../partials/_header', { title: title }) %>
+<%- include('../partials/_messages') %>
+
+<div class="container">
+  
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <form action="/venues" method="GET">
+        <div class="row g-3 align-items-end">
+          
+          <div class="col-md-5">
+            <label for="lokasi" class="form-label fw-bold">Lokasi</label>
+            <input type="text" class="form-control" name="lokasi" id="lokasi" 
+                   value="<%= filter.lokasi ? filter.lokasi : '' %>" 
+                   placeholder="Cari berdasarkan nama lokasi/alamat...">
+          </div>
+          
+          <div class="col-md-4">
+            <label for="jenis" class="form-label fw-bold">Jenis Olahraga</label>
+            <select class="form-select" name="jenis" id="jenis">
+              <option value="">Semua Jenis</option>
+              <% if (jenisList.length > 0) { %>
+                <% jenisList.forEach(item => { %>
+                  <option 
+                    value="<%= item.jenis_olahraga %>" 
+                    <%= (filter.jenis == item.jenis_olahraga) ? 'selected' : '' %>>
+                    <%= item.jenis_olahraga %>
+                  </option>
+                <% }) %>
+              <% } %>
+            </select>
+          </div>
+          <div class="col-md-3 d-grid gap-2 d-md-block">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Cari
+            </button>
+            <a href="/venues" class="btn btn-outline-secondary">Reset</a>
+          </div>
+          
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <h3 class="mb-3">Semua Arena (<%= data.length %>)</h3>
+  
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+    
+    <% if (data.length > 0) { %>
+      <% data.forEach(arena => { %>
+        <div class="col">
+          <div class="card h-100 shadow-sm border-0">
+            
+            <img 
+              src="<%= arena.foto_cover ? arena.foto_cover : 'https://via.placeholder.com/400x250.png?text=Foto+Belum+Ada' %>" 
+              class="card-img-top" 
+              alt="<%= arena.nama_arena %>"
+              style="height: 200px; object-fit: cover;">
+            
+            <div class="card-body">
+              <h5 class="card-title"><%= arena.nama_arena %></h5>
+              <p class="card-text text-muted mb-2 small">
+                <i class="bi bi-geo-alt-fill me-1"></i> 
+                <%= arena.lokasi %>
+              </p>
+              <span class="badge bg-primary mb-3">
+                <%= arena.jenis_olahraga %>
+              </span>
+              
+              <div class="d-grid">
+                <a href="/venues/detail/<%= arena.id_arena %>" class="btn btn-success">
+                  <i class="bi bi-calendar-check me-2"></i> Lihat Jadwal
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <div class="col-12">
+        <div class="alert alert-warning text-center">
+          <h5>Arena Tidak Ditemukan</h5>
+          <p>Coba gunakan kata kunci atau filter yang berbeda.</p>
+        </div>
+      </div>
+    <% } %>
+
+  </div> </div> <%- include('../partials/_footer') %>

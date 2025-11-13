@@ -1,0 +1,14 @@
+<%- include('partials/_header', { title: 'Error' }) %>
+
+<div class="text-center">
+    <h1 class="display-1 text-danger"><%= message %></h1>
+    <h2><%= error.status %></h2>
+    <p>Maaf, halaman yang Anda cari tidak ditemukan atau terjadi kesalahan.</p>
+    <a href="/" class="btn btn-primary">Kembali ke Home</a>
+    
+    <% if (error.status !== 404) { %>
+      <pre class="text-start bg-light p-3 mt-4"><%= error.stack %></pre>
+    <% } %>
+</div>
+
+<%- include('partials/_footer') %>

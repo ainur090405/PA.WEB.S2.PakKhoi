@@ -1,0 +1,140 @@
+<%- include('../../partials/_header', { title: "Generator Jadwal Massal" }) %>
+
+<div class="row justify-content-center">
+  <div class="col-md-9">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-light">
+        <h3 class="mb-0"><i class="bi bi-magic me-2"></i> Generator Jadwal Massal</h3>
+      </div>
+      <div class="card-body p-4">
+        <p class="text-muted">Gunakan form ini untuk membuat slot jadwal (sesi) secara otomatis untuk beberapa minggu ke depan.</p>
+        
+        <%- include('../../partials/_messages') %>
+
+        <form action="/jadwal/generator" method="POST">
+          
+          <div class="mb-3">
+            <label for="id_arena" class="form-label fw-bold">1. Pilih Arena</label>
+            <select class="form-select" name="id_arena" id="id_arena" required>
+              <option value="">-- Pilih Arena --</option>
+              <% arenaList.forEach(arena => { %>
+                <option value="<%= arena.id_arena %>">
+                  <%= arena.nama_arena %> (<%= arena.jenis_olahraga %>)
+                </option>
+              <% }) %>
+            </select>
+            <div id="jamBukaHelp" class="form-text text-muted">
+              Pilih arena untuk melihat jam operasional.
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">2. Pilih Hari (Pola Mingguan)</label>
+            <div class="d-flex flex-wrap">
+              <div class="form-check form-check-inline me-3"><input class="form-check-input" type="checkbox" name="hari" value="Senin" id="hari1"> <label class="form-check-label" for="hari1">Senin</label></div>
+              <div class="form-check form-check-inline me-3"><input class="form-check-input" type="checkbox" name="hari" value="Selasa" id="hari2"> <label class="form-check-label" for="hari2">Selasa</label></div>
+              <div class="form-check form-check-inline me-3"><input class="form-check-input" type="checkbox" name="hari" value="Rabu" id="hari3"> <label class="form-check-label" for="hari3">Rabu</label></div>
+              <div class="form-check form-check-inline me-3"><input class="form-check-input" type="checkbox" name="hari" value="Kamis" id="hari4"> <label class="form-check-label" for="hari4">Kamis</label></div>
+              <div class="form-check form-check-inline me-3"><input class="form-check-input" type="checkbox" name="hari" value="Jumat" id="hari5"> <label class="form-check-label" for="hari5">Jumat</label></div>
+              <div class="form-check form-check-inline me-3"><input class="form-check-input" type="checkbox" name="hari" value="Sabtu" id="hari6"> <label class="form-check-label" for="hari6">Sabtu</label></div>
+              <div class="form-check form-check-inline me-3"><input class="form-check-input" type="checkbox" name="hari" value="Minggu" id="hari7"> <label class="form-check-label" for="hari7">Minggu</label></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="jam_buka_operasi" class="form-label fw-bold">3. Jam Mulai Sesi Pertama</label>
+              <input type="time" class="form-control" id="jam_buka_operasi" name="jam_buka_operasi" required disabled>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="jam_tutup_operasi" class="form-label fw-bold">4. Jam Selesai Sesi Terakhir</label>
+              <input type="time" class="form-control" id="jam_tutup_operasi" name="jam_tutup_operasi" required disabled>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="durasi_sesi" class="form-label fw-bold">5. Durasi per Sesi (menit)</label>
+              <input type="number" class="form-control" id="durasi_sesi" name="durasi_sesi" value="60" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="jumlah_minggu" class="form-label fw-bold">6. Generate untuk...</label>
+              <select class="form-select" name="jumlah_minggu" id="jumlah_minggu">
+                <option value="1">1 Minggu ke depan</option>
+                <option value="2">2 Minggu ke depan</option>
+                <option value="4" selected>4 Minggu ke depan (1 Bulan)</option>
+              </select>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-success btn-lg mt-3">
+            <i class="bi bi-magic me-2"></i> Generate Jadwal Sekarang
+          </button>
+          <a href="/jadwal" class="btn btn-secondary mt-3">Batal</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Ambil elemen-elemen (dengan ID yang berbeda)
+  const arenaSelect = document.getElementById('id_arena');
+  const jamMulaiInput = document.getElementById('jam_buka_operasi'); // <-- ID BEDA
+  const jamSelesaiInput = document.getElementById('jam_tutup_operasi'); // <-- ID BEDA
+  const jamBukaHelp = document.getElementById('jamBukaHelp');
+
+  // Dengarkan event 'change' pada dropdown arena
+  arenaSelect.addEventListener('change', async function() {
+    const arenaId = this.value;
+
+    if (arenaId) {
+      try {
+        // 1. Ambil data jam buka/tutup dari API
+        const response = await fetch(`/arena/api/${arenaId}`);
+        if (!response.ok) throw new Error('Arena tidak ditemukan');
+        
+        const arena = await response.json();
+        
+        // 2. Tampilkan pesan bantuan
+        jamBukaHelp.textContent = `Jam operasional arena: ${arena.jam_buka.substring(0,5)} - ${arena.jam_tutup.substring(0,5)}`;
+        jamBukaHelp.classList.add('text-success', 'fw-bold');
+
+        // 3. Atur batasan (min/max) pada input jam
+        jamMulaiInput.min = arena.jam_buka.substring(0,5);
+        jamMulaiInput.max = arena.jam_tutup.substring(0,5);
+        
+        jamSelesaiInput.min = arena.jam_buka.substring(0,5);
+        jamSelesaiInput.max = arena.jam_tutup.substring(0,5);
+
+        // 4. (Opsional) Isi otomatis input jam
+        jamMulaiInput.value = arena.jam_buka.substring(0,5);
+        jamSelesaiInput.value = arena.jam_tutup.substring(0,5);
+
+        // 5. Aktifkan input jam
+        jamMulaiInput.disabled = false;
+        jamSelesaiInput.disabled = false;
+
+      } catch (error) {
+        console.error(error);
+        jamBukaHelp.textContent = 'Gagal memuat jam operasional.';
+        jamBukaHelp.classList.remove('text-success', 'fw-bold');
+        jamMulaiInput.disabled = true;
+        jamSelesaiInput.disabled = true;
+      }
+    } else {
+      // Jika user memilih "-- Pilih Arena --"
+      jamBukaHelp.textContent = 'Pilih arena untuk melihat jam operasional.';
+      jamBukaHelp.classList.remove('text-success', 'fw-bold');
+      jamMulaiInput.disabled = true;
+      jamSelesaiInput.disabled = true;
+    }
+a });
+
+  // Logika tambahan
+  jamMulaiInput.addEventListener('change', function() {
+    jamSelesaiInput.min = this.value; 
+  });
+</script>
+
+<%- include('../../partials/_footer') %>
