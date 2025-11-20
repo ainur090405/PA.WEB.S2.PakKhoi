@@ -19,31 +19,9 @@
 </div>
 
 <div class="card shadow-sm border-0" style="border-radius:20px; overflow:hidden;">
-  <div class="card-body">
-
-    <!-- FILTER BAR DATATABLE -->
-    <div class="row mb-3">
-      <div class="col-md-3 mb-2">
-        <label class="form-label mb-1">Filter Metode</label>
-        <select id="filterMetodePembayaran" class="form-select form-select-sm">
-          <option value="">Semua Metode</option>
-          <option value="COD">COD</option>
-          <option value="Transfer">Transfer</option>
-        </select>
-      </div>
-      <div class="col-md-3 mb-2">
-        <label class="form-label mb-1">Filter Status</label>
-        <select id="filterStatusPembayaran" class="form-select form-select-sm">
-          <option value="">Semua Status</option>
-          <option value="Menunggu">Menunggu</option>
-          <option value="Dikonfirmasi">Dikonfirmasi</option>
-          <option value="Ditolak">Ditolak</option>
-        </select>
-      </div>
-    </div>
-
+  <div class="card-body p-0">
     <div class="table-responsive">
-      <table id="pembayaranTable" class="table table-hover align-middle mb-0">
+      <table class="table table-hover align-middle mb-0">
         <thead style="background: linear-gradient(135deg, #f8f9fa, #e9ecef);">
           <tr>
             <th class="ps-4 py-3">ID</th>
@@ -85,12 +63,12 @@
               </td>
 
               <!-- JUMLAH -->
-              <td class="fw-bold text-success" data-order="<%= Number(p.jumlah) || 0 %>">
+              <td class="fw-bold text-success">
                 Rp <%= Number(p.jumlah).toLocaleString('id-ID') %>
               </td>
 
               <!-- TANGGAL -->
-              <td data-order="<%= new Date(p.tanggal_pembayaran).getTime() %>">
+              <td>
                 <small class="text-muted">
                   <%= new Date(p.tanggal_pembayaran).toLocaleDateString('id-ID') %>
                 </small>
@@ -188,58 +166,5 @@
     </div>
   </div>
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // INIT DATATABLE
-    const table = $('#pembayaranTable').DataTable({
-      pageLength: 10,
-      lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Semua"]],
-      order: [[5, 'desc']], // tanggal pembayaran
-      columnDefs: [
-        { orderable: false, targets: [6, 8] }, // Bukti & Aksi
-        { type: 'num', targets: 4 }            // Jumlah numeric
-      ],
-      language: {
-        lengthMenu: "Tampilkan _MENU_ data per halaman",
-        zeroRecords: "Tidak ada data yang ditemukan",
-        info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
-        infoEmpty: "Tidak ada data tersedia",
-        infoFiltered: "(difilter dari _MAX_ total data)",
-        search: "Cari:",
-        paginate: {
-          first: "Pertama",
-          last: "Terakhir",
-          next: "Selanjutnya",
-          previous: "Sebelumnya"
-        }
-      }
-    });
-
-    // INDEX KOLOM:
-    // 0 ID, 1 Pemesan, 2 Arena, 3 Metode, 4 Jumlah,
-    // 5 Tanggal, 6 Bukti, 7 Status, 8 Aksi
-
-    // FILTER METODE (kolom 3) – berdasarkan teks badge: "COD" / "Transfer"
-    document.getElementById('filterMetodePembayaran').addEventListener('change', function () {
-      const val = this.value; // COD / Transfer / ''
-      if (val) {
-        table.column(3).search(val, false, false).draw();
-      } else {
-        table.column(3).search('', false, false).draw();
-      }
-    });
-
-    // FILTER STATUS (kolom 7) – teks badge: Menunggu / Dikonfirmasi / Ditolak
-    document.getElementById('filterStatusPembayaran').addEventListener('change', function () {
-      const val = this.value;
-      if (val) {
-        table.column(7).search(val, false, false).draw();
-      } else {
-        table.column(7).search('', false, false).draw();
-      }
-    });
-  });
-</script>
 
 <%- include('../../partials/_footer') %>
