@@ -10,28 +10,132 @@
         <ul class="list-group list-group-flush mb-3">
           <li class="list-group-item"><strong>Pemesan:</strong> <%= reservasi.nama_user %></li>
           <li class="list-group-item"><strong>Arena:</strong> <%= reservasi.nama_arena %></li>
-          <li class="list-group-item"><strong>Waktu Main:</strong> <%= new Date(reservasi.tanggal).toLocaleDateString('id-ID') %>, jam <%= reservasi.jam_mulai.substring(0,5) %></li>
+          <li class="list-group-item">
+            <strong>Waktu Main:</strong>
+            <%= reservasi.tanggal ? new Date(reservasi.tanggal).toLocaleDateString('id-ID') : '-' %>,
+            jam <%= reservasi.jam_mulai ? reservasi.jam_mulai.substring(0,5) : '-' %>
+          </li>
+          <li class="list-group-item">
+            <strong>Metode Pembayaran:</strong>
+            <%= reservasi.pembayaran_metode || '-' %>
+          </li>
+          <li class="list-group-item">
+            <strong>Status Pembayaran:</strong>
+            <%= reservasi.pembayaran_status || '-' %>
+          </li>
+          <li class="list-group-item">
+            <strong>Jumlah:</strong>
+            <% if (reservasi.pembayaran_jumlah > 0) { %>
+              Rp <%= Number(reservasi.pembayaran_jumlah).toLocaleString('id-ID') %>
+            <% } else { %>
+              -
+            <% } %>
+          </li>
         </ul>
 
+        <%
+          // file bukti dari pembayaran_bukti
+          const buktiFile = reservasi.pembayaran_bukti || null;
+          // catatan: bisa dari pembayaran_catatan atau dari reservasi.catatan
+          const catatanAdmin = reservasi.pembayaran_catatan || reservasi.catatan || '';
+        %>
+
+        <% if (buktiFile) { %>
+          <div class="mb-3">
+            <label class="form-label">Bukti Pembayaran</label>
+            <div class="card p-2 mb-2">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <strong><%= buktiFile %></strong>
+                </div>
+                <div>
+                  <a href="/uploads/bukti_pembayaran/<%= buktiFile %>" target="_blank" class="btn btn-sm btn-outline-info">
+                    <i class="bi bi-eye"></i> Lihat
+                  </a>
+                  <a href="/uploads/bukti_pembayaran/<%= buktiFile %>" download class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-download"></i> Download
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-center">
+              <img src="/uploads/bukti_pembayaran/<%= buktiFile %>" alt="Bukti" class="img-fluid rounded shadow" style="max-height:300px;">
+            </div>
+          </div>
+        <% } else { %>
+          <div class="mb-3">
+            <label class="form-label">Bukti Pembayaran</label>
+            <div class="alert alert-warning mb-0">Belum ada bukti pembayaran.</div>
+          </div>
+        <% } %>
+
+        <!-- FORM UBAH STATUS -->
         <form action="/admin/reservasi/update/<%= reservasi.id_reservasi %>" method="POST">
           <div class="mb-3">
             <label for="status" class="form-label">Status Reservasi</label>
             <select class="form-select" name="status" id="status" required>
-              <option value="menunggu" <%= reservasi.status === 'menunggu' ? 'selected' : '' %>>Menunggu</option>
+              <option value="menunggu"  <%= reservasi.status === 'menunggu'  ? 'selected' : '' %>>Menunggu</option>
               <option value="disetujui" <%= reservasi.status === 'disetujui' ? 'selected' : '' %>>Disetujui</option>
-              <option value="ditolak" <%= reservasi.status === 'ditolak' ? 'selected' : '' %>>Ditolak</option>
-              <option value="selesai" <%= reservasi.status === 'selesai' ? 'selected' : '' %>>Selesai</option>
+              <option value="ditolak"   <%= reservasi.status === 'ditolak'   ? 'selected' : '' %>>Ditolak</option>
+              <option value="selesai"   <%= reservasi.status === 'selesai'   ? 'selected' : '' %>>Selesai</option>
             </select>
           </div>
 
           <div class="mb-3">
             <label for="catatan" class="form-label">Catatan (Opsional)</label>
-            <textarea class="form-control" id="catatan" name="catatan" rows="2"><%= reservasi.catatan || '' %></textarea>
+            <textarea class="form-control" id="catatan" name="catatan" rows="2"><%= catatanAdmin %></textarea>
+            <small class="text-muted">
+              Catatan ini disimpan di kolom <code>reservasi.catatan</code> dan bisa ditampilkan ke pemain di detail pembayaran.
+            </small>
           </div>
 
           <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
           <a href="/admin/reservasi" class="btn btn-secondary">Batal</a>
         </form>
+
+        <!-- ======================= -->
+        <!--  RIWAYAT STATUS (LOG)   -->
+        <!-- ======================= -->
+        <hr class="my-4">
+
+        <h5 class="mb-3">
+          <i class="bi bi-clock-history me-1"></i> Riwayat Status Reservasi
+        </h5>
+
+        <% if (logs && logs.length > 0) { %>
+          <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle mb-0">
+              <thead>
+                <tr>
+                  <th style="width: 30%;">Waktu</th>
+                  <th>Status Awal</th>
+                  <th>Status Baru</th>
+                  <th>Catatan</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% logs.forEach(l => { %>
+                  <tr>
+                    <td>
+                      <%= l.waktu_perubahan
+                            ? new Date(l.waktu_perubahan).toLocaleString('id-ID')
+                            : '-' %>
+                    </td>
+                    <td><span class="badge bg-light text-dark"><%= l.status_awal || '-' %></span></td>
+                    <td><span class="badge bg-primary"><%= l.status_baru || '-' %></span></td>
+                    <td><%= l.keterangan || '-' %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <div class="alert alert-light border mt-2 mb-0">
+            Belum ada riwayat perubahan status untuk reservasi ini.
+          </div>
+        <% } %>
+
       </div>
     </div>
   </div>

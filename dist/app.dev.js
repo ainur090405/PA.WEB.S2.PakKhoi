@@ -56,8 +56,10 @@ app.use(express.json());
 app.use(express.urlencoded({
   extended: false
 }));
-app.use(cookieParser());
-app.use(express["static"](path.join(__dirname, 'public'))); // Konfigurasi Session (Tanpa .env)
+app.use(cookieParser()); // Serve static files (including uploaded files under public/uploads)
+
+app.use(express["static"](path.join(__dirname, 'public')));
+app.use('/uploads', express["static"](path.join(__dirname, 'public', 'uploads'))); // Konfigurasi Session (Tanpa .env)
 
 app.use(session({
   secret: 'kunci-rahasia-untuk-arenago-project',
@@ -72,7 +74,25 @@ app.use(session({
   }
 })); // Konfigurasi Flash Message
 
-app.use(flash()); // [Middleware Global PENTING]
+app.use(flash()); // ============================
+// Pastikan folder upload ada
+// ============================
+
+var fs = require('fs');
+
+var uploadsDirs = [path.join(__dirname, 'public', 'uploads'), path.join(__dirname, 'public', 'uploads', 'arena'), path.join(__dirname, 'public', 'uploads', 'bukti_pembayaran')];
+uploadsDirs.forEach(function (dir) {
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, {
+        recursive: true
+      });
+      console.log('Membuat folder upload:', dir);
+    }
+  } catch (err) {
+    console.error('Gagal membuat folder uploads:', dir, err);
+  }
+}); // [Middleware Global PENTING]
 // Mengirim pesan flash & info user ke SEMUA file .ejs
 
 app.use(function _callee(req, res, next) {
@@ -84,7 +104,7 @@ app.use(function _callee(req, res, next) {
           res.locals.success_msg = req.flash('success_msg');
           res.locals.error_msg = req.flash('error_msg');
           res.locals.user = req.session.user || null; // Info user yang login
-          // Jika user adalah pemain, ambil notifikasi
+          // Jika user adalah pemain, ambil notifikasi (opsional)
 
           if (!(req.session.user && req.session.user.role === 'pemain')) {
             _context.next = 21;
@@ -161,11 +181,6 @@ app.use(function (err, req, res, next) {
   res.render('error', {
     title: 'Error'
   });
-}); // Start server
-
-var port = process.env.PORT || 3000;
-app.listen(port, function () {
-  console.log("Server running on port ".concat(port));
 });
 
 var cron = require('node-cron');

@@ -1,14 +1,19 @@
 // routes/reservasi.js
 const express = require('express');
 const router = express.Router();
+
 const Model_Reservasi = require('../models/Model_Reservasi');
-const Model_Pembayaran = require('../models/Model_Pembayaran');
+const Model_Jadwal = require('../models/Model_Jadwal');
+const Model_Notifikasi = require('../models/Model_Notifikasi');
+const Model_LogReservasi = require('../models/Model_LogReservasi'); 
 const { isAuthenticated, isAdmin } = require('../middleware/authMiddleware');
 
-// Lindungi semua rute, hanya Admin
+// Semua route di sini khusus admin
 router.use(isAuthenticated, isAdmin);
 
-// GET: Tampilkan daftar reservasi
+// ============================
+// LIST RESERVASI (ADMIN)
+// ============================
 router.get('/', async (req, res) => {
   try {
     const reservasi = await Model_Reservasi.getAll();
@@ -17,159 +22,263 @@ router.get('/', async (req, res) => {
       data: reservasi
     });
   } catch (err) {
-    console.error(err); // Tampilkan error di console
+    console.error('ERR GET /admin/reservasi:', err);
     req.flash('error_msg', 'Gagal memuat data reservasi.');
-    res.redirect('/admin/dashboard');
+    return res.redirect('/admin/dashboard');
   }
 });
 
-// GET: Form edit reservasi (untuk ubah status)
+// GET: form edit reservasi
 router.get('/edit/:id', async (req, res) => {
   try {
-    const id = req.params.id;
-    const reservasiData = await Model_Reservasi.getById(id);
+    const id = parseInt(req.params.id, 10);
 
-    if (reservasiData.length === 0) {
-      req.flash('error_msg', 'Reservasi tidak ditemukan.');
-      return res.redirect('/reservasi');
+    const rows = await Model_Reservasi.getById(id);
+    if (!rows || rows.length === 0) {
+      req.flash('error_msg', 'Data reservasi tidak ditemukan.');
+      return res.redirect('/admin/reservasi');
+    }
+
+    const reservasi = rows[0];
+
+    // ⬇️ AMBIL RIWAYAT LOG UNTUK RESERVASI INI
+    let logs = [];
+    try {
+      logs = await Model_LogReservasi.getByReservasi(id);
+    } catch (logErr) {
+      console.warn('Gagal mengambil log reservasi:', logErr);
     }
 
     res.render('admin/reservasi/edit', {
       title: 'Update Status Reservasi',
-      reservasi: reservasiData[0]
+      reservasi,
+      logs   // dikirim ke view (kalau mau dipakai)
     });
   } catch (err) {
+    console.error('ERR GET /admin/reservasi/edit:', err);
     req.flash('error_msg', 'Gagal memuat data reservasi.');
-    res.redirect('/reservasi');
+    res.redirect('/admin/reservasi');
   }
 });
 
+// ============================
+// UPDATE STATUS (SINGLE FIELD)
+// ============================
 router.post('/update-status/:id', async (req, res) => {
   try {
     const id_reservasi = req.params.id;
     const { status } = req.body;
 
+    // ⬇️ AMBIL STATUS AWAL UNTUK LOG
+    const rowsBefore = await Model_Reservasi.getById(id_reservasi);
+    if (!rowsBefore || rowsBefore.length === 0) {
+      req.flash('error_msg', 'Reservasi tidak ditemukan.');
+      return res.redirect('/admin/reservasi');
+    }
+    const reservasiBefore = rowsBefore[0];
+    const status_awal = reservasiBefore.status;
+
+    // =======================
+    // LOGIKA LAMA (TIDAK DIUBAH)
+    // =======================
     if (status === 'ditolak') {
-      // ✅ Gunakan fungsi otomatis tolak + kosongkan slot
-      await Model_Reservasi.rejectAndFreeSlot(id_reservasi);
+      if (typeof Model_Reservasi.rejectAndFreeSlot === 'function') {
+        await Model_Reservasi.rejectAndFreeSlot(id_reservasi);
+      } else {
+        await Model_Reservasi.Update(id_reservasi, { status: 'ditolak' });
+        const r = await Model_Reservasi.getById(id_reservasi);
+        if (r && r[0] && r[0].id_jadwal) {
+          await Model_Jadwal.Update(r[0].id_jadwal, { status_slot: 'kosong' });
+        }
+      }
     } else {
-      // Untuk status lain (disetujui, menunggu, dsb)
+      // Status lain: cukup update status reservasi + sinkron jadwal
       await Model_Reservasi.Update(id_reservasi, { status });
 
-      // Sinkronkan status slot manual
-      const reservasi = await Model_Reservasi.getById(id_reservasi);
-      const id_jadwal = reservasi[0].id_jadwal;
-
-      if (status === 'disetujui') {
-        await Model_Jadwal.Update(id_jadwal, { status_slot: 'terisi' });
-      } else if (status === 'batal') {
-        await Model_Jadwal.Update(id_jadwal, { status_slot: 'kosong' });
+      const rows = await Model_Reservasi.getById(id_reservasi);
+      if (rows && rows[0]) {
+        const id_jadwal = rows[0].id_jadwal;
+        if (id_jadwal) {
+          if (status === 'disetujui') {
+            await Model_Jadwal.Update(id_jadwal, { status_slot: 'terisi' });
+          } else if (status === 'batal' || status === 'ditolak') {
+            await Model_Jadwal.Update(id_jadwal, { status_slot: 'kosong' });
+          } else if (status === 'selesai') {
+            await Model_Jadwal.Update(id_jadwal, { status_slot: 'terisi' });
+          }
+        }
       }
     }
 
-    req.flash('success_msg', `Status reservasi berhasil diperbarui menjadi ${status}`);
-    res.redirect('/reservasi');
+    // ⬇️ CATAT LOG PERUBAHAN STATUS
+    try {
+      await Model_LogReservasi.catatStatus(
+        id_reservasi,
+        status_awal,
+        status,
+        'Update via tombol cepat /update-status'
+      );
+    } catch (logErr) {
+      console.warn('Gagal mencatat log reservasi (update-status):', logErr);
+    }
+
+    // Kirim notifikasi ke user (opsional)
+    try {
+      const rows = await Model_Reservasi.getById(id_reservasi);
+      if (rows && rows[0] && rows[0].id_user) {
+        const r = rows[0];
+        const notif = {
+          id_user: r.id_user,
+          judul: `Status Booking: ${status.toUpperCase()}`,
+          isi_pesan:
+            status === 'disetujui'
+              ? `Booking Anda untuk arena ${r.nama_arena} telah disetujui.`
+              : status === 'ditolak'
+              ? `Maaf, booking Anda untuk arena ${r.nama_arena} ditolak.`
+              : status === 'selesai'
+              ? `Terima kasih telah bermain di ${r.nama_arena}.`
+              : `Status booking Anda telah berubah menjadi ${status}.`,
+          jenis_notif: 'status',
+          tipe: 'booking',
+          dibaca: 0
+        };
+        if (typeof Model_Notifikasi.Store === 'function') {
+          await Model_Notifikasi.Store(notif);
+        }
+      }
+    } catch (notifErr) {
+      console.warn('Gagal kirim notifikasi (non blocking):', notifErr);
+    }
+
+    req.flash('success_msg', `Status reservasi berhasil diperbarui menjadi ${status}.`);
+    return res.redirect('/admin/reservasi');
 
   } catch (err) {
-    console.error(err);
-    req.flash('error_msg', 'Gagal memperbarui status reservasi');
-    res.redirect('/reservasi');
+    console.error('ERR POST /admin/reservasi/update-status:', err);
+    req.flash('error_msg', 'Gagal memperbarui status reservasi.');
+    return res.redirect('/admin/reservasi');
   }
 });
 
-
-// POST: Update reservasi
+// ============================
+// UPDATE FORM LENGKAP (STATUS + CATATAN)
+// ============================
 router.post('/update/:id', async (req, res) => {
   const id = req.params.id;
   try {
     const { status, catatan } = req.body;
     const dataToUpdate = { status, catatan };
 
-    const reservasiData = await Model_Reservasi.getById(id);
-    if (reservasiData.length === 0) {
+    // ⬇️ AMBIL DATA & STATUS AWAL UNTUK LOG
+    const rows = await Model_Reservasi.getById(id);
+    if (!rows || rows.length === 0) {
       req.flash('error_msg', 'Reservasi tidak ditemukan.');
       return res.redirect('/admin/reservasi');
     }
+    const r = rows[0];
+    const status_awal = r.status;
+    const id_jadwal = r.id_jadwal;
 
-    const id_jadwal = reservasiData[0].id_jadwal;
-    const Model_Jadwal = require('../models/Model_Jadwal');
-    const Model_Notifikasi = require('../models/Model_Notifikasi');
-
-    // 🔹 Update status reservasi
+    // Update status & catatan (LOGIKA LAMA)
     await Model_Reservasi.Update(id, dataToUpdate);
 
-    // 🔹 Sinkronisasi status jadwal
-    if (status === 'disetujui') {
-      await Model_Jadwal.Update(id_jadwal, { status_slot: 'terisi' });
-    } 
-    else if (status === 'ditolak' || status === 'batal') {
-      // kalau ditolak atau dibatalkan, buka lagi slotnya
-      await Model_Jadwal.Update(id_jadwal, { status_slot: 'kosong' });
-    } 
-    else if (status === 'selesai') {
-      // biarkan tetap terisi, karena sudah main
-      await Model_Jadwal.Update(id_jadwal, { status_slot: 'terisi' });
+    // Sinkron jadwal (LOGIKA LAMA)
+    if (id_jadwal) {
+      if (status === 'disetujui') {
+        await Model_Jadwal.Update(id_jadwal, { status_slot: 'terisi' });
+      } else if (status === 'ditolak' || status === 'batal') {
+        await Model_Jadwal.Update(id_jadwal, { status_slot: 'kosong' });
+      } else if (status === 'selesai') {
+        await Model_Jadwal.Update(id_jadwal, { status_slot: 'terisi' });
+      }
     }
 
-    // 🔹 Kirim notifikasi ke pemain
-    if (reservasiData[0].id_user) {
+    // ⬇️ CATAT LOG PERUBAHAN STATUS + CATATAN
+    try {
+      await Model_LogReservasi.catatStatus(
+        id,
+        status_awal,
+        status,
+        catatan || null
+      );
+    } catch (logErr) {
+      console.warn('Gagal mencatat log reservasi (update form):', logErr);
+    }
+
+    // Notifikasi opsional (LOGIKA LAMA)
+    if (r.id_user) {
       const notif = {
-        id_user: reservasiData[0].id_user,
+        id_user: r.id_user,
         judul: `Status Booking: ${status.toUpperCase()}`,
         isi_pesan:
-          status === 'disetujui' ? 
-            `Booking Anda untuk arena ${reservasiData[0].nama_arena} telah disetujui.` :
-          status === 'ditolak' ?
-            `Maaf, booking Anda untuk arena ${reservasiData[0].nama_arena} ditolak.` :
-          status === 'selesai' ?
-            `Terima kasih telah bermain di ${reservasiData[0].nama_arena}.` :
-            `Status booking Anda telah berubah menjadi ${status}.`,
+          status === 'disetujui'
+            ? `Booking Anda untuk arena ${r.nama_arena} telah disetujui.`
+            : status === 'ditolak'
+            ? `Maaf, booking Anda untuk arena ${r.nama_arena} ditolak.`
+            : status === 'selesai'
+            ? `Terima kasih telah bermain di ${r.nama_arena}.`
+            : `Status booking Anda telah berubah menjadi ${status}.`,
         jenis_notif: 'status',
         tipe: 'booking',
         dibaca: 0
       };
-      await Model_Notifikasi.Store(notif);
+      if (typeof Model_Notifikasi.Store === 'function') {
+        await Model_Notifikasi.Store(notif);
+      }
     }
 
     req.flash('success_msg', 'Status reservasi berhasil diperbarui.');
-    res.redirect('/admin/reservasi');
+    return res.redirect('/admin/reservasi');
   } catch (err) {
-    console.error(err);
+    console.error('ERR POST /admin/reservasi/update:', err);
     req.flash('error_msg', 'Gagal memperbarui reservasi: ' + err.message);
-    res.redirect('/admin/reservasi/edit/' + id);
+    return res.redirect('/admin/reservasi/edit/' + id);
   }
 });
 
-
-// GET: Hapus reservasi
+// ============================
+// DELETE RESERVASI
+// ============================
 router.get('/delete/:id', async (req, res) => {
   try {
     await Model_Reservasi.Delete(req.params.id);
     req.flash('success_msg', 'Data reservasi berhasil dihapus.');
-    res.redirect('/reservasi');
+    return res.redirect('/admin/reservasi');
   } catch (err) {
-    req.flash('error_msg', 'Gagal menghapus reservasi: ' + err.code);
-    res.redirect('/reservasi');
+    console.error('ERR GET /admin/reservasi/delete:', err);
+    req.flash('error_msg', 'Gagal menghapus reservasi: ' + (err.message || err.code));
+    return res.redirect('/admin/reservasi');
   }
 });
 
-// GET: Download reservasi data as CSV
+// ============================
+// DOWNLOAD CSV
+// ============================
 router.get('/download', async (req, res) => {
   try {
     const reservasi = await Model_Reservasi.getAll();
-    let csv = 'ID,Pemesan,Arena,Tanggal Main,Jam,Tanggal Pesan,Status,Pembayaran,Jumlah\n';
+    let csv = 'ID,Pemesan,Arena,Tanggal Main,Jam,Tanggal Pesan,Status,Metode Pembayaran,Status Pembayaran,Jumlah,Bukti\n';
 
     reservasi.forEach(r => {
-      csv += `${r.id_reservasi},${r.nama_user},${r.nama_arena},${new Date(r.tanggal).toLocaleDateString('id-ID')},${r.jam_mulai.substring(0,5)},${new Date(r.tanggal_pesan).toLocaleDateString('id-ID')},${r.status},${r.payment_method || ''},${r.amount || 0}\n`;
+      const tanggalMain = r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID') : '';
+      const jam = r.jam_mulai ? r.jam_mulai.substring(0, 5) : '';
+      const tanggalPesan = r.tanggal_pesan ? new Date(r.tanggal_pesan).toLocaleDateString('id-ID') : '';
+
+      const metode = r.metode_pembayaran || '';          // dari join pembayaran
+      const statusPemb = r.status_pembayaran || '';
+      const jumlah = r.jumlah || 0;                       // alias di model
+      const bukti = r.pembayaran_bukti || '';
+
+      csv += `${r.id_reservasi},"${(r.nama_user || '').replace(/"/g,'""')}","${(r.nama_arena || '').replace(/"/g,'""')}",${tanggalMain},${jam},${tanggalPesan},${r.status || ''},${metode},${statusPemb},${jumlah},${bukti}\n`;
     });
 
     res.header('Content-Type', 'text/csv');
     res.attachment('reservasi.csv');
-    res.send(csv);
+    return res.send(csv);
   } catch (err) {
-    console.error(err);
+    console.error('ERR GET /admin/reservasi/download:', err);
     req.flash('error_msg', 'Gagal mendownload data reservasi.');
-    res.redirect('/reservasi');
+    return res.redirect('/admin/reservasi');
   }
 });
 

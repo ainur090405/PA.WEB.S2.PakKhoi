@@ -18,7 +18,6 @@ class Model_Users {
     });
   }
 
-  // Ganti nama 'Login' menjadi 'getByEmail' agar lebih jelas
   static async getByEmail(email){
     return new Promise((resolve, reject) => {
       connection.query('SELECT * FROM users WHERE email = ?', [email], (err, result) => {

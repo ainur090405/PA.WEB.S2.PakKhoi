@@ -2,13 +2,42 @@
 <%- include('../../partials/_messages') %>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h2><i class="bi bi-journal-check"></i> <%= title %></h2>
+  <div>
+    <h2 class="fw-bold text-primary mb-1">
+      <i class="bi bi-journal-check me-2"></i> <%= title %>
+    </h2>
+    <p class="text-muted mb-0">Kelola data reservasi dan pembayaran</p>
+  </div>
 </div>
 
 <div class="card shadow-sm border-0">
   <div class="card-body">
+
+    <!-- FILTER BAR DROPDOWN -->
+    <div class="row mb-3">
+      <div class="col-md-3 mb-2">
+        <label class="form-label mb-1">Filter Status Reservasi</label>
+        <select id="filterStatusReservasi" class="form-select form-select-sm">
+          <option value="">Semua Status</option>
+          <option value="menunggu">Menunggu</option>
+          <option value="disetujui">Disetujui</option>
+          <option value="ditolak">Ditolak</option>
+          <option value="selesai">Selesai</option>
+        </select>
+      </div>
+      <div class="col-md-3 mb-2">
+        <label class="form-label mb-1">Filter Metode Pembayaran</label>
+        <select id="filterMetodePembayaran" class="form-select form-select-sm">
+          <option value="">Semua Metode</option>
+          <option value="cod">COD</option>
+          <!-- labelnya sekarang Transfer Bank -->
+          <option value="transaksi">Transfer Bank</option>
+        </select>
+      </div>
+    </div>
+
     <div class="table-responsive">
-      <table class="table table-hover align-middle">
+      <table id="reservasiTable" class="table table-hover align-middle">
         <thead class="table-light">
           <tr>
             <th>ID</th>
@@ -18,20 +47,34 @@
             <th>Jam</th>
             <th>Tanggal Pesan</th>
             <th>Status</th>
-            <th>Pembayaran</th>
+            <th>Metode Pembayaran</th>
             <th>Jumlah</th>
+            <th>Bukti</th>
             <th>Aksi</th>
           </tr>
         </thead>
         <tbody>
           <% data.forEach(r => { %>
+            <%
+              const buktiFile = r.pembayaran_bukti || null;
+            %>
             <tr>
               <td><%= r.id_reservasi %></td>
               <td><%= r.nama_user %></td>
               <td><%= r.nama_arena %></td>
-              <td><%= new Date(r.tanggal).toLocaleDateString('id-ID') %></td>
-              <td><%= r.jam_mulai.substring(0,5) %></td>
-              <td><%= new Date(r.tanggal_pesan).toLocaleDateString('id-ID') %></td>
+
+              <td data-order="<%= r.tanggal ? new Date(r.tanggal).getTime() : 0 %>">
+                <%= r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID') : '-' %>
+              </td>
+
+              <td>
+                <%= r.jam_mulai ? r.jam_mulai.substring(0,5) : '-' %>
+              </td>
+
+              <td data-order="<%= r.tanggal_pesan ? new Date(r.tanggal_pesan).getTime() : 0 %>">
+                <%= r.tanggal_pesan ? new Date(r.tanggal_pesan).toLocaleDateString('id-ID') : '-' %>
+              </td>
+
               <td>
                 <% if(r.status == 'selesai') { %>
                   <span class="badge bg-success">Selesai</span>
@@ -43,28 +86,38 @@
                   <span class="badge bg-danger">Ditolak</span>
                 <% } %>
               </td>
+
               <td>
-                <% if(r.payment_method == 'cod') { %>
+                <% if(r.pembayaran_metode === 'cod') { %>
                   <span class="badge bg-primary">COD</span>
-                <% } else if (r.payment_method == 'midtrans') { %>
-                  <span class="badge bg-secondary">Midtrans</span>
+                <% } else if (r.pembayaran_metode === 'transaksi') { %>
+                  <span class="badge bg-info">Transfer Bank</span>
                 <% } else { %>
                   <span class="badge bg-light text-dark">-</span>
                 <% } %>
               </td>
-              <td>
-                <% if(r.amount > 0) { %>
-                  Rp <%= r.amount.toLocaleString('id-ID') %>
+
+              <td data-order="<%= r.pembayaran_jumlah || 0 %>">
+                <% if(r.pembayaran_jumlah > 0) { %>
+                  Rp <%= Number(r.pembayaran_jumlah).toLocaleString('id-ID') %>
                 <% } else { %>
                   -
                 <% } %>
               </td>
+
+              <td>
+                <% if (buktiFile) { %>
+                  <a href="/uploads/bukti_pembayaran/<%= buktiFile %>" target="_blank" class="btn btn-sm btn-outline-info">
+                    <i class="bi bi-eye"></i> Lihat
+                  </a>
+                <% } else { %>
+                  <span class="text-muted">-</span>
+                <% } %>
+              </td>
+
               <td>
                 <a href="/admin/reservasi/edit/<%= r.id_reservasi %>" class="btn btn-sm btn-outline-warning">
                   <i class="bi bi-pencil-fill"></i> Edit Status
-                </a>
-                <a href="/admin/reservasi/download" class="btn btn-sm btn-outline-success ms-1">
-                  <i class="bi bi-download"></i> Download
                 </a>
               </td>
             </tr>
@@ -74,5 +127,58 @@
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // INIT DATATABLE
+    const table = $('#reservasiTable').DataTable({
+      pageLength: 10,
+      lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+      order: [[5, 'desc']], // Tanggal Pesan
+      columnDefs: [
+        { orderable: false, targets: [9, 10] }, // Bukti & Aksi
+        { type: "num", targets: 8 }            // Jumlah numeric
+      ],
+      language: {
+        lengthMenu: "Tampilkan _MENU_ data per halaman",
+        zeroRecords: "Tidak ada data yang ditemukan",
+        info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+        infoEmpty: "Tidak ada data tersedia",
+        infoFiltered: "(difilter dari _MAX_ total data)",
+        search: "Cari:",
+        paginate: {
+          first: "Pertama",
+          last: "Terakhir",
+          next: "Selanjutnya",
+          previous: "Sebelumnya"
+        }
+      }
+    });
+
+    // FILTER STATUS (kolom 6)
+    document.getElementById('filterStatusReservasi').addEventListener('change', function () {
+      const val = this.value; // menunggu / disetujui / ditolak / selesai (lowercase)
+      if (val) {
+        table.column(6).search(val, false, false).draw();
+      } else {
+        table.column(6).search('', false, false).draw();
+      }
+    });
+
+    // FILTER METODE PEMBAYARAN (kolom 7)
+    document.getElementById('filterMetodePembayaran').addEventListener('change', function () {
+      const val = this.value; // cod / transaksi / ''
+
+      if (val === 'transaksi') {
+        // di kolom teksnya "Transfer Bank"
+        table.column(7).search('Transfer Bank', false, false).draw();
+      } else if (val === 'cod') {
+        table.column(7).search('COD', false, false).draw();
+      } else {
+        table.column(7).search('', false, false).draw();
+      }
+    });
+  });
+</script>
 
 <%- include('../../partials/_footer') %>

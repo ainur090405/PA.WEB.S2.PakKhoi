@@ -1,5 +1,6 @@
 <%- include('../../partials/_header', { title: title }) %>
 <%- include('../../partials/_messages') %>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2><i class="bi bi-calendar-week-fill"></i> <%= title %></h2>
   
@@ -16,8 +17,43 @@
 
 <div class="card shadow-sm border-0">
   <div class="card-body">
+
+    <!-- ========== FILTER BAR ATAS TABEL ========== -->
+    <div class="row mb-3">
+      <!-- Filter Arena -->
+      <div class="col-md-4 mb-2">
+        <label class="form-label mb-1">Filter Arena</label>
+        <select id="filterArena" class="form-select form-select-sm">
+          <option value="">Semua Arena</option>
+          <% 
+            // buat list arena unik dari data jadwal
+            const __arenaNamaSet = {};
+            data.forEach(j => { 
+              if (j.nama_arena) __arenaNamaSet[j.nama_arena] = true; 
+            });
+            Object.keys(__arenaNamaSet).forEach(nm => { 
+          %>
+            <option value="<%= nm %>"><%= nm %></option>
+          <% }); %>
+        </select>
+      </div>
+
+      <!-- Filter Status Slot -->
+      <div class="col-md-4 mb-2">
+        <label class="form-label mb-1">Filter Status Slot</label>
+        <select id="filterStatusSlot" class="form-select form-select-sm">
+          <option value="">Semua Status</option>
+          <!-- nilai DISESUAIKAN dengan teks di badge: Kosong / Terisi / Maintenance -->
+          <option value="Kosong">Kosong</option>
+          <option value="Terisi">Terisi</option>
+          <option value="Maintenance">Maintenance</option>
+        </select>
+      </div>
+    </div>
+    <!-- ========== END FILTER BAR ========== -->
+
     <div class="table-responsive">
-      <table class="table table-hover align-middle">
+      <table id="jadwalTable" class="table table-hover align-middle">
         <thead class="table-light">
           <tr>
             <th>Arena</th>
@@ -32,7 +68,9 @@
           <% data.forEach(j => { %>
             <tr>
               <td><%= j.nama_arena %></td>
-              <td><%= new Date(j.tanggal).toLocaleDateString('id-ID') %></td>
+              <td data-order="<%= new Date(j.tanggal).getTime() %>">
+                <%= new Date(j.tanggal).toLocaleDateString('id-ID') %>
+              </td>
               <td><%= j.jam_mulai.substring(0,5) %></td>
               <td><%= j.jam_selesai.substring(0,5) %></td>
               <td>
@@ -48,7 +86,7 @@
                 <a href="/jadwal/edit/<%= j.id_jadwal %>" class="btn btn-sm btn-outline-warning">
                   <i class="bi bi-pencil-fill"></i>
                 </a>
-                <a href="/jadwal/delete/<%= j.id_jadwal %>" class="btn btn-sm btn-outline-danger" 
+                <a href="/jadwal/delete/<%= j.id_jadwal %>" class="btn btn-sm btn-outline-danger"
                    onclick="return confirm('Yakin hapus jadwal ini?')">
                   <i class="bi bi-trash-fill"></i>
                 </a>
@@ -60,5 +98,64 @@
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Inisialisasi DataTable
+    const table = $('#jadwalTable').DataTable({
+      pageLength: 10,
+      lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+      order: [[1, 'asc']], // sort by Tanggal
+      columnDefs: [
+        { orderable: false, targets: 5 } // kolom Aksi
+      ],
+      language: {
+        lengthMenu: "Tampilkan _MENU_ data per halaman",
+        zeroRecords: "Tidak ada data yang ditemukan",
+        info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+        infoEmpty: "Tidak ada data tersedia",
+        infoFiltered: "(difilter dari _MAX_ total data)",
+        search: "Cari:",
+        paginate: {
+          first: "Pertama",
+          last: "Terakhir",
+          next: "Selanjutnya",
+          previous: "Sebelumnya"
+        }
+      }
+    });
+
+    // INDEX KOLOM:
+    // 0: Arena, 1: Tanggal, 2: Jam Mulai, 3: Jam Selesai, 4: Status, 5: Aksi
+
+    // === FILTER ARENA (kolom 0) ===
+    const filterArena = document.getElementById('filterArena');
+    if (filterArena) {
+      filterArena.addEventListener('change', function () {
+        const val = this.value;
+        if (val) {
+          // cari teks nama arena persis
+          table.column(0).search('^' + $.fn.dataTable.util.escapeRegex(val) + '$', true, false).draw();
+        } else {
+          table.column(0).search('', true, false).draw();
+        }
+      });
+    }
+
+    // === FILTER STATUS SLOT (kolom 4) ===
+    const filterStatus = document.getElementById('filterStatusSlot');
+    if (filterStatus) {
+      filterStatus.addEventListener('change', function () {
+        const val = this.value; // Kosong / Terisi / Maintenance
+        if (val) {
+          // teks badge di kolom juga "Kosong", "Terisi", "Maintenance"
+          table.column(4).search(val, false, false).draw();
+        } else {
+          table.column(4).search('', false, false).draw();
+        }
+      });
+    }
+  });
+</script>
 
 <%- include('../../partials/_footer') %>

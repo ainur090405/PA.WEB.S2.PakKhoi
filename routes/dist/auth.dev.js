@@ -6,7 +6,10 @@ var router = express.Router();
 
 var bcrypt = require('bcryptjs');
 
-var Model_Users = require('../models/Model_Users');
+var Model_Users = require('../models/Model_Users'); // =====================
+// REGISTER
+// =====================
+
 
 router.get('/register', function (req, res) {
   res.render('auth/register', {
@@ -67,6 +70,8 @@ router.post('/register', function _callee(req, res) {
             no_hp: no_hp,
             password_hash: hash,
             role: 'pemain',
+            status: 'aktif',
+            // ✅ default akun baru = aktif
             tanggal_daftar: new Date()
           };
           _context.next = 20;
@@ -91,7 +96,10 @@ router.post('/register', function _callee(req, res) {
       }
     }
   }, null, null, [[7, 24]]);
-});
+}); // =====================
+// LOGIN
+// =====================
+
 router.get('/login', function (req, res) {
   res.render('auth/login', {
     title: 'Login'
@@ -121,22 +129,32 @@ router.post('/login', function _callee2(req, res) {
           return _context2.abrupt("return", res.redirect('/auth/login'));
 
         case 8:
-          user = users[0];
-          _context2.next = 11;
+          user = users[0]; // ✅ BLOKIR USER NONAKTIF
+
+          if (!(user.status === 'nonaktif')) {
+            _context2.next = 12;
+            break;
+          }
+
+          req.flash('error_msg', 'Akun Anda tidak aktif. Silakan hubungi admin.');
+          return _context2.abrupt("return", res.redirect('/auth/login'));
+
+        case 12:
+          _context2.next = 14;
           return regeneratorRuntime.awrap(bcrypt.compare(password, user.password_hash));
 
-        case 11:
+        case 14:
           isMatch = _context2.sent;
 
           if (isMatch) {
-            _context2.next = 15;
+            _context2.next = 18;
             break;
           }
 
           req.flash('error_msg', 'Email atau Password salah.');
           return _context2.abrupt("return", res.redirect('/auth/login'));
 
-        case 15:
+        case 18:
           req.session.user = {
             id: user.id_user,
             nama: user.nama,
@@ -151,23 +169,26 @@ router.post('/login', function _callee2(req, res) {
             res.redirect('/');
           }
 
-          _context2.next = 25;
+          _context2.next = 28;
           break;
 
-        case 20:
-          _context2.prev = 20;
+        case 23:
+          _context2.prev = 23;
           _context2.t0 = _context2["catch"](1);
           console.error(_context2.t0);
           req.flash('error_msg', 'Terjadi kesalahan server.');
           res.redirect('/auth/login');
 
-        case 25:
+        case 28:
         case "end":
           return _context2.stop();
       }
     }
-  }, null, null, [[1, 20]]);
-});
+  }, null, null, [[1, 23]]);
+}); // =====================
+// LOGOUT
+// =====================
+
 router.get('/logout', function (req, res) {
   req.flash('success_msg', 'Anda berhasil logout.');
   req.session.destroy(function (err) {

@@ -3,10 +3,12 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const Model_Users = require('../models/Model_Users'); 
 
+// =====================
+// REGISTER
+// =====================
 router.get('/register', (req, res) => {
   res.render('auth/register', { title: 'Daftar Akun' });
 });
-
 
 router.post('/register', async (req, res) => {
   const { nama, email, password, konfirmasi_password, no_hp } = req.body;
@@ -30,9 +32,12 @@ router.post('/register', async (req, res) => {
 
     const hash = await bcrypt.hash(password, 10);
     const dataUser = {
-      nama, email, no_hp,
+      nama,
+      email,
+      no_hp,
       password_hash: hash,
       role: 'pemain',
+      status: 'aktif',                 // ✅ default akun baru = aktif
       tanggal_daftar: new Date()
     };
     
@@ -48,10 +53,12 @@ router.post('/register', async (req, res) => {
   }
 });
 
+// =====================
+// LOGIN
+// =====================
 router.get('/login', (req, res) => {
   res.render('auth/login', { title: 'Login' });
 });
-
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -64,6 +71,13 @@ router.post('/login', async (req, res) => {
     }
     
     const user = users[0];
+
+    // ✅ BLOKIR USER NONAKTIF
+    if (user.status === 'nonaktif') {
+      req.flash('error_msg', 'Akun Anda tidak aktif. Silakan hubungi admin.');
+      return res.redirect('/auth/login');
+    }
+
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       req.flash('error_msg', 'Email atau Password salah.');
@@ -92,7 +106,9 @@ router.post('/login', async (req, res) => {
   }
 });
 
-
+// =====================
+// LOGOUT
+// =====================
 router.get('/logout', (req, res) => {
   req.flash('success_msg', 'Anda berhasil logout.');
   req.session.destroy((err) => {

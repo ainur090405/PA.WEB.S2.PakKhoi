@@ -6,6 +6,7 @@ var logger = require('morgan');
 var session = require('express-session');
 var flash = require('connect-flash');
 
+
 // Impor Rute
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users'); // Rute CRUD Master User
@@ -21,6 +22,7 @@ var fotoRouter = require('./routes/foto');
 var ulasanRouter = require('./routes/ulasan');
 var pembayaranRouter = require('./routes/pembayaran');
 var notifikasiRouter = require('./routes/notifikasi');
+
 var app = express();
 
 // view engine setup
@@ -31,7 +33,10 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+// Serve static files (including uploaded files under public/uploads)
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // Konfigurasi Session (Tanpa .env)
 app.use(session({
@@ -47,6 +52,27 @@ app.use(session({
 // Konfigurasi Flash Message
 app.use(flash());
 
+// ============================
+// Pastikan folder upload ada
+// ============================
+const fs = require('fs');
+const uploadsDirs = [
+  path.join(__dirname, 'public', 'uploads'),
+  path.join(__dirname, 'public', 'uploads', 'arena'),
+  path.join(__dirname, 'public', 'uploads', 'bukti_pembayaran')
+];
+
+uploadsDirs.forEach(dir => {
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log('Membuat folder upload:', dir);
+    }
+  } catch (err) {
+    console.error('Gagal membuat folder uploads:', dir, err);
+  }
+});
+
 // [Middleware Global PENTING]
 // Mengirim pesan flash & info user ke SEMUA file .ejs
 app.use(async (req, res, next) => {
@@ -54,7 +80,7 @@ app.use(async (req, res, next) => {
   res.locals.error_msg = req.flash('error_msg');
   res.locals.user = req.session.user || null; // Info user yang login
 
-  // Jika user adalah pemain, ambil notifikasi
+  // Jika user adalah pemain, ambil notifikasi (opsional)
   if (req.session.user && req.session.user.role === 'pemain') {
     const Model_Notifikasi = require('./models/Model_Notifikasi');
     try {
@@ -88,6 +114,7 @@ app.use('/foto', fotoRouter);
 app.use('/ulasan', ulasanRouter);
 app.use('/admin/pembayaran', pembayaranRouter);
 app.use('/notifikasi', notifikasiRouter);
+
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
@@ -104,12 +131,6 @@ app.use(function(err, req, res, next) {
   res.render('error', { title: 'Error' });
 });
 
-
-// Start server
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
 const cron = require('node-cron');
 const Model_Reservasi = require('./models/Model_Reservasi');
 
@@ -122,4 +143,5 @@ cron.schedule('* * * * *', async () => {
     console.error('Gagal auto update:', err);
   }
 });
+
 module.exports = app;

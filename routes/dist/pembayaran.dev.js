@@ -1,19 +1,32 @@
 "use strict";
 
+// routes/pembayaran.js
 var express = require('express');
 
 var router = express.Router();
+
+var connection = require('../config/database');
 
 var Model_Pembayaran = require('../models/Model_Pembayaran');
 
 var Model_Reservasi = require('../models/Model_Reservasi');
 
+var Model_Jadwal = require('../models/Model_Jadwal');
+
+var Model_Notifikasi = require('../models/Model_Notifikasi');
+
 var _require = require('../middleware/authMiddleware'),
     isAuthenticated = _require.isAuthenticated,
-    isAdmin = _require.isAdmin; // Lindungi semua rute, hanya Admin
+    isAdmin = _require.isAdmin; // ⬇️ TAMBAHAN: helper untuk log_reservasi
 
 
-router.use(isAuthenticated, isAdmin); // GET: Tampilkan daftar pembayaran yang pending
+var _require2 = require('../helpers/logHelper'),
+    createLog = _require2.createLog; // semua route di sini hanya boleh diakses admin
+
+
+router.use(isAuthenticated, isAdmin); // ===============================
+// GET: daftar pembayaran pending
+// ===============================
 
 router.get('/', function _callee(req, res) {
   var pembayaran;
@@ -37,7 +50,7 @@ router.get('/', function _callee(req, res) {
         case 7:
           _context.prev = 7;
           _context.t0 = _context["catch"](0);
-          console.error(_context.t0);
+          console.error('ERR GET /admin/pembayaran:', _context.t0);
           req.flash('error_msg', 'Gagal memuat data pembayaran.');
           res.redirect('/admin/dashboard');
 
@@ -47,284 +60,333 @@ router.get('/', function _callee(req, res) {
       }
     }
   }, null, null, [[0, 7]]);
-}); // POST: Konfirmasi pembayaran
+}); // =======================================
+// POST: KONFIRMASI PEMBAYARAN (BERHASIL)
+// =======================================
 
-router.post('/confirm/:id', function _callee2(req, res) {
-  var id_pembayaran, catatan_admin, pembayaranData, reservasiData, Model_Jadwal, Model_Notifikasi, notifData;
-  return regeneratorRuntime.async(function _callee2$(_context2) {
-    while (1) {
-      switch (_context2.prev = _context2.next) {
-        case 0:
-          _context2.prev = 0;
-          id_pembayaran = req.params.id;
-          catatan_admin = req.body.catatan_admin; // Konfirmasi pembayaran
+router.post('/confirm/:id_pembayaran', function (req, res) {
+  var id_pembayaran = req.params.id_pembayaran;
 
-          _context2.next = 5;
-          return regeneratorRuntime.awrap(Model_Pembayaran.confirmPayment(id_pembayaran, 'confirmed', catatan_admin));
+  var _ref = req.body || {},
+      catatan_admin = _ref.catatan_admin; // 1) ambil dulu pembayaran-nya
 
-        case 5:
-          _context2.next = 7;
-          return regeneratorRuntime.awrap(Model_Pembayaran.getById(id_pembayaran));
 
-        case 7:
-          pembayaranData = _context2.sent;
+  connection.query('SELECT * FROM pembayaran WHERE id_pembayaran = ?', [id_pembayaran], function _callee3(err, rowsBayar) {
+    var bayar, id_reservasi;
+    return regeneratorRuntime.async(function _callee3$(_context3) {
+      while (1) {
+        switch (_context3.prev = _context3.next) {
+          case 0:
+            if (!err) {
+              _context3.next = 4;
+              break;
+            }
 
-          if (!(pembayaranData.length > 0)) {
-            _context2.next = 29;
-            break;
-          }
+            console.error('ERR SELECT pembayaran:', err);
+            req.flash('error_msg', 'Gagal mengambil data pembayaran.');
+            return _context3.abrupt("return", res.redirect('/admin/pembayaran'));
 
-          _context2.next = 11;
-          return regeneratorRuntime.awrap(Model_Reservasi.Update(pembayaranData[0].id_reservasi, {
-            status: 'disetujui'
-          }));
+          case 4:
+            if (!(!rowsBayar || rowsBayar.length === 0)) {
+              _context3.next = 7;
+              break;
+            }
 
-        case 11:
-          _context2.next = 13;
-          return regeneratorRuntime.awrap(Model_Reservasi.getById(pembayaranData[0].id_reservasi));
+            req.flash('error_msg', 'Data pembayaran tidak ditemukan.');
+            return _context3.abrupt("return", res.redirect('/admin/pembayaran'));
 
-        case 13:
-          reservasiData = _context2.sent;
+          case 7:
+            bayar = rowsBayar[0];
+            id_reservasi = bayar.id_reservasi; // 2) update tabel pembayaran -> confirmed
 
-          if (!(reservasiData.length > 0)) {
-            _context2.next = 18;
-            break;
-          }
+            connection.query("UPDATE pembayaran\n         SET status_pembayaran = 'confirmed',\n             konfirmasi_admin = 1,\n             catatan_admin = ?,\n             updated_at = NOW()\n         WHERE id_pembayaran = ?", [catatan_admin || null, id_pembayaran], function _callee2(err2) {
+              var rowsReservasiBefore, reservasiBefore, statusAwal, rowsReservasi, reservasi;
+              return regeneratorRuntime.async(function _callee2$(_context2) {
+                while (1) {
+                  switch (_context2.prev = _context2.next) {
+                    case 0:
+                      if (!err2) {
+                        _context2.next = 4;
+                        break;
+                      }
 
-          Model_Jadwal = require('../models/Model_Jadwal');
-          _context2.next = 18;
-          return regeneratorRuntime.awrap(Model_Jadwal.Update(reservasiData[0].id_jadwal, {
-            status_slot: 'terisi'
-          }));
+                      console.error('ERR UPDATE pembayaran:', err2);
+                      req.flash('error_msg', 'Gagal mengkonfirmasi pembayaran.');
+                      return _context2.abrupt("return", res.redirect('/admin/pembayaran'));
 
-        case 18:
-          if (!(pembayaranData[0] && pembayaranData[0].id_user && typeof pembayaranData[0].id_user === 'number' && pembayaranData[0].id_user > 0)) {
-            _context2.next = 29;
-            break;
-          }
+                    case 4:
+                      _context2.prev = 4;
+                      _context2.next = 7;
+                      return regeneratorRuntime.awrap(Model_Reservasi.getById(id_reservasi));
 
-          _context2.prev = 19;
-          Model_Notifikasi = require('../models/Model_Notifikasi');
-          notifData = {
-            id_user: pembayaranData[0].id_user,
-            judul: 'Pembayaran Dikonfirmasi',
-            isi_pesan: "Pembayaran Anda untuk arena ".concat(pembayaranData[0].nama_arena || 'Arena', " telah dikonfirmasi. Booking Anda sekarang aktif."),
-            jenis_notif: 'status',
-            tipe: 'payment',
-            dibaca: 0
-          };
-          _context2.next = 24;
-          return regeneratorRuntime.awrap(Model_Notifikasi.Store(notifData));
+                    case 7:
+                      rowsReservasiBefore = _context2.sent;
+                      reservasiBefore = rowsReservasiBefore && rowsReservasiBefore[0] ? rowsReservasiBefore[0] : null;
+                      statusAwal = reservasiBefore ? reservasiBefore.status || null : null; // 3) update reservasi -> disetujui
 
-        case 24:
-          _context2.next = 29;
-          break;
+                      _context2.next = 12;
+                      return regeneratorRuntime.awrap(Model_Reservasi.Update(id_reservasi, {
+                        status: 'disetujui'
+                      }));
 
-        case 26:
-          _context2.prev = 26;
-          _context2.t0 = _context2["catch"](19);
-          console.error('Failed to send notification:', _context2.t0); // Continue with confirmation even if notification fails
+                    case 12:
+                      _context2.next = 14;
+                      return regeneratorRuntime.awrap(Model_Reservasi.getById(id_reservasi));
 
-        case 29:
-          req.flash('success_msg', 'Pembayaran berhasil dikonfirmasi.');
-          res.redirect('/admin/pembayaran');
-          _context2.next = 38;
-          break;
+                    case 14:
+                      rowsReservasi = _context2.sent;
+                      reservasi = rowsReservasi && rowsReservasi[0] ? rowsReservasi[0] : null; // 3b) SIMPAN LOG RESERVASI
 
-        case 33:
-          _context2.prev = 33;
-          _context2.t1 = _context2["catch"](0);
-          console.error(_context2.t1);
-          req.flash('error_msg', 'Gagal mengkonfirmasi pembayaran.');
-          res.redirect('/admin/pembayaran');
+                      _context2.prev = 16;
+                      _context2.next = 19;
+                      return regeneratorRuntime.awrap(createLog(id_reservasi, statusAwal || 'menunggu', 'disetujui', 'Pembayaran dikonfirmasi admin'));
 
-        case 38:
-        case "end":
-          return _context2.stop();
+                    case 19:
+                      _context2.next = 24;
+                      break;
+
+                    case 21:
+                      _context2.prev = 21;
+                      _context2.t0 = _context2["catch"](16);
+                      console.warn('Gagal membuat log konfirmasi pembayaran:', _context2.t0);
+
+                    case 24:
+                      if (!(reservasi && reservasi.id_jadwal)) {
+                        _context2.next = 27;
+                        break;
+                      }
+
+                      _context2.next = 27;
+                      return regeneratorRuntime.awrap(Model_Jadwal.Update(reservasi.id_jadwal, {
+                        status_slot: 'terisi'
+                      }));
+
+                    case 27:
+                      _context2.prev = 27;
+
+                      if (!(reservasi && reservasi.id_user)) {
+                        _context2.next = 31;
+                        break;
+                      }
+
+                      _context2.next = 31;
+                      return regeneratorRuntime.awrap(Model_Notifikasi.Store({
+                        id_user: reservasi.id_user,
+                        judul: 'Pembayaran Dikonfirmasi',
+                        isi_pesan: "Pembayaran Anda untuk arena ".concat(reservasi.nama_arena || 'Arena', " telah dikonfirmasi. Booking Anda sekarang aktif."),
+                        jenis_notif: 'status',
+                        tipe: 'payment',
+                        dibaca: 0
+                      }));
+
+                    case 31:
+                      _context2.next = 36;
+                      break;
+
+                    case 33:
+                      _context2.prev = 33;
+                      _context2.t1 = _context2["catch"](27);
+                      console.warn('Gagal kirim notif konfirmasi pembayaran:', _context2.t1);
+
+                    case 36:
+                      req.flash('success_msg', 'Pembayaran berhasil dikonfirmasi.');
+                      return _context2.abrupt("return", res.redirect('/admin/pembayaran'));
+
+                    case 40:
+                      _context2.prev = 40;
+                      _context2.t2 = _context2["catch"](4);
+                      console.error('ERR AFTER UPDATE pembayaran:', _context2.t2);
+                      req.flash('error_msg', 'Pembayaran terupdate, tapi terjadi error lanjutan. Cek log server.');
+                      return _context2.abrupt("return", res.redirect('/admin/pembayaran'));
+
+                    case 45:
+                    case "end":
+                      return _context2.stop();
+                  }
+                }
+              }, null, null, [[4, 40], [16, 21], [27, 33]]);
+            });
+
+          case 10:
+          case "end":
+            return _context3.stop();
+        }
       }
-    }
-  }, null, null, [[0, 33], [19, 26]]);
-}); // POST: Konfirmasi COD (tanpa redirect, hanya flash message)
+    });
+  });
+}); // ==================================
+// POST: TOLAK PEMBAYARAN (REJECTED)
+// ==================================
 
-router.post('/confirm-cod/:id', function _callee3(req, res) {
-  var id_pembayaran, pembayaranData, reservasiData, Model_Jadwal, Model_Notifikasi, notifData;
-  return regeneratorRuntime.async(function _callee3$(_context3) {
-    while (1) {
-      switch (_context3.prev = _context3.next) {
-        case 0:
-          _context3.prev = 0;
-          id_pembayaran = req.params.id; // Konfirmasi pembayaran COD
+router.post('/reject/:id_pembayaran', function (req, res) {
+  var id_pembayaran = req.params.id_pembayaran;
 
-          _context3.next = 4;
-          return regeneratorRuntime.awrap(Model_Pembayaran.confirmPayment(id_pembayaran, 'confirmed', 'COD - Pembayaran diterima langsung'));
+  var _ref2 = req.body || {},
+      catatan_admin = _ref2.catatan_admin; // 1) ambil dulu pembayaran
 
-        case 4:
-          _context3.next = 6;
-          return regeneratorRuntime.awrap(Model_Pembayaran.getById(id_pembayaran));
 
-        case 6:
-          pembayaranData = _context3.sent;
+  connection.query('SELECT * FROM pembayaran WHERE id_pembayaran = ?', [id_pembayaran], function _callee5(err, rowsBayar) {
+    var bayar, id_reservasi;
+    return regeneratorRuntime.async(function _callee5$(_context5) {
+      while (1) {
+        switch (_context5.prev = _context5.next) {
+          case 0:
+            if (!err) {
+              _context5.next = 4;
+              break;
+            }
 
-          if (!(pembayaranData.length > 0)) {
-            _context3.next = 28;
-            break;
-          }
+            console.error('ERR SELECT pembayaran (reject):', err);
+            req.flash('error_msg', 'Gagal mengambil data pembayaran.');
+            return _context5.abrupt("return", res.redirect('/admin/pembayaran'));
 
-          _context3.next = 10;
-          return regeneratorRuntime.awrap(Model_Reservasi.Update(pembayaranData[0].id_reservasi, {
-            status: 'disetujui'
-          }));
+          case 4:
+            if (!(!rowsBayar || rowsBayar.length === 0)) {
+              _context5.next = 7;
+              break;
+            }
 
-        case 10:
-          _context3.next = 12;
-          return regeneratorRuntime.awrap(Model_Reservasi.getById(pembayaranData[0].id_reservasi));
+            req.flash('error_msg', 'Data pembayaran tidak ditemukan.');
+            return _context5.abrupt("return", res.redirect('/admin/pembayaran'));
 
-        case 12:
-          reservasiData = _context3.sent;
+          case 7:
+            bayar = rowsBayar[0];
+            id_reservasi = bayar.id_reservasi; // 2) update pembayaran -> rejected
 
-          if (!(reservasiData.length > 0)) {
-            _context3.next = 17;
-            break;
-          }
+            connection.query("UPDATE pembayaran\n         SET status_pembayaran = 'rejected',\n             konfirmasi_admin = 1,\n             catatan_admin = ?,\n             updated_at = NOW()\n         WHERE id_pembayaran = ?", [catatan_admin || null, id_pembayaran], function _callee4(err2) {
+              var rowsReservasiBefore, reservasiBefore, statusAwal, rowsReservasi, _rowsReservasi, r;
 
-          Model_Jadwal = require('../models/Model_Jadwal');
-          _context3.next = 17;
-          return regeneratorRuntime.awrap(Model_Jadwal.Update(reservasiData[0].id_jadwal, {
-            status_slot: 'terisi'
-          }));
+              return regeneratorRuntime.async(function _callee4$(_context4) {
+                while (1) {
+                  switch (_context4.prev = _context4.next) {
+                    case 0:
+                      if (!err2) {
+                        _context4.next = 4;
+                        break;
+                      }
 
-        case 17:
-          if (!(pembayaranData[0] && pembayaranData[0].id_user && typeof pembayaranData[0].id_user === 'number' && pembayaranData[0].id_user > 0)) {
-            _context3.next = 28;
-            break;
-          }
+                      console.error('ERR UPDATE pembayaran (reject):', err2);
+                      req.flash('error_msg', 'Gagal menolak pembayaran.');
+                      return _context4.abrupt("return", res.redirect('/admin/pembayaran'));
 
-          _context3.prev = 18;
-          Model_Notifikasi = require('../models/Model_Notifikasi');
-          notifData = {
-            id_user: pembayaranData[0].id_user,
-            judul: 'Pembayaran COD Dikonfirmasi',
-            isi_pesan: "Pembayaran COD Anda untuk arena ".concat(pembayaranData[0].nama_arena || 'Arena', " telah dikonfirmasi. Booking Anda sekarang aktif."),
-            jenis_notif: 'status',
-            tipe: 'payment',
-            dibaca: 0
-          };
-          _context3.next = 23;
-          return regeneratorRuntime.awrap(Model_Notifikasi.Store(notifData));
+                    case 4:
+                      _context4.prev = 4;
+                      _context4.next = 7;
+                      return regeneratorRuntime.awrap(Model_Reservasi.getById(id_reservasi));
 
-        case 23:
-          _context3.next = 28;
-          break;
+                    case 7:
+                      rowsReservasiBefore = _context4.sent;
+                      reservasiBefore = rowsReservasiBefore && rowsReservasiBefore[0] ? rowsReservasiBefore[0] : null;
+                      statusAwal = reservasiBefore ? reservasiBefore.status || null : null; // 3) update reservasi -> ditolak + kosongkan slot
 
-        case 25:
-          _context3.prev = 25;
-          _context3.t0 = _context3["catch"](18);
-          console.error('Failed to send notification:', _context3.t0);
+                      if (!(typeof Model_Reservasi.rejectAndFreeSlot === 'function')) {
+                        _context4.next = 15;
+                        break;
+                      }
 
-        case 28:
-          // Return JSON response untuk AJAX
-          res.json({
-            success: true,
-            message: 'Pembayaran COD berhasil dikonfirmasi!'
-          });
-          _context3.next = 35;
-          break;
+                      _context4.next = 13;
+                      return regeneratorRuntime.awrap(Model_Reservasi.rejectAndFreeSlot(id_reservasi));
 
-        case 31:
-          _context3.prev = 31;
-          _context3.t1 = _context3["catch"](0);
-          console.error(_context3.t1); // Return JSON error response untuk AJAX, bukan redirect
+                    case 13:
+                      _context4.next = 23;
+                      break;
 
-          res.status(500).json({
-            success: false,
-            message: 'Gagal mengkonfirmasi pembayaran COD. Silakan coba lagi.'
-          });
+                    case 15:
+                      _context4.next = 17;
+                      return regeneratorRuntime.awrap(Model_Reservasi.Update(id_reservasi, {
+                        status: 'ditolak'
+                      }));
 
-        case 35:
-        case "end":
-          return _context3.stop();
+                    case 17:
+                      _context4.next = 19;
+                      return regeneratorRuntime.awrap(Model_Reservasi.getById(id_reservasi));
+
+                    case 19:
+                      rowsReservasi = _context4.sent;
+
+                      if (!(rowsReservasi && rowsReservasi[0] && rowsReservasi[0].id_jadwal)) {
+                        _context4.next = 23;
+                        break;
+                      }
+
+                      _context4.next = 23;
+                      return regeneratorRuntime.awrap(Model_Jadwal.Update(rowsReservasi[0].id_jadwal, {
+                        status_slot: 'kosong'
+                      }));
+
+                    case 23:
+                      _context4.prev = 23;
+                      _context4.next = 26;
+                      return regeneratorRuntime.awrap(createLog(id_reservasi, statusAwal || 'menunggu', 'ditolak', "Pembayaran ditolak admin. ".concat(catatan_admin || '')));
+
+                    case 26:
+                      _context4.next = 31;
+                      break;
+
+                    case 28:
+                      _context4.prev = 28;
+                      _context4.t0 = _context4["catch"](23);
+                      console.warn('Gagal membuat log tolak pembayaran:', _context4.t0);
+
+                    case 31:
+                      _context4.prev = 31;
+                      _context4.next = 34;
+                      return regeneratorRuntime.awrap(Model_Reservasi.getById(id_reservasi));
+
+                    case 34:
+                      _rowsReservasi = _context4.sent;
+                      r = _rowsReservasi && _rowsReservasi[0] ? _rowsReservasi[0] : null;
+
+                      if (!(r && r.id_user)) {
+                        _context4.next = 39;
+                        break;
+                      }
+
+                      _context4.next = 39;
+                      return regeneratorRuntime.awrap(Model_Notifikasi.Store({
+                        id_user: r.id_user,
+                        judul: 'Pembayaran Ditolak',
+                        isi_pesan: "Pembayaran Anda untuk arena ".concat(r.nama_arena || 'Arena', " ditolak. ").concat(catatan_admin || ''),
+                        jenis_notif: 'status',
+                        tipe: 'payment',
+                        dibaca: 0
+                      }));
+
+                    case 39:
+                      _context4.next = 44;
+                      break;
+
+                    case 41:
+                      _context4.prev = 41;
+                      _context4.t1 = _context4["catch"](31);
+                      console.warn('Gagal kirim notif tolak pembayaran:', _context4.t1);
+
+                    case 44:
+                      req.flash('success_msg', 'Pembayaran berhasil ditolak.');
+                      return _context4.abrupt("return", res.redirect('/admin/pembayaran'));
+
+                    case 48:
+                      _context4.prev = 48;
+                      _context4.t2 = _context4["catch"](4);
+                      console.error('ERR AFTER UPDATE pembayaran (reject):', _context4.t2);
+                      req.flash('error_msg', 'Pembayaran terupdate, tapi terjadi error lanjutan. Cek log server.');
+                      return _context4.abrupt("return", res.redirect('/admin/pembayaran'));
+
+                    case 53:
+                    case "end":
+                      return _context4.stop();
+                  }
+                }
+              }, null, null, [[4, 48], [23, 28], [31, 41]]);
+            });
+
+          case 10:
+          case "end":
+            return _context5.stop();
+        }
       }
-    }
-  }, null, null, [[0, 31], [18, 25]]);
-}); // POST: Tolak pembayaran
-
-router.post('/reject/:id', function _callee4(req, res) {
-  var id_pembayaran, catatan_admin, pembayaranData, Model_Notifikasi, notifData;
-  return regeneratorRuntime.async(function _callee4$(_context4) {
-    while (1) {
-      switch (_context4.prev = _context4.next) {
-        case 0:
-          _context4.prev = 0;
-          id_pembayaran = req.params.id;
-          catatan_admin = req.body.catatan_admin; // Update status pembayaran menjadi 'rejected'
-
-          _context4.next = 5;
-          return regeneratorRuntime.awrap(Model_Pembayaran.confirmPayment(id_pembayaran, 'rejected', catatan_admin));
-
-        case 5:
-          _context4.next = 7;
-          return regeneratorRuntime.awrap(Model_Pembayaran.getById(id_pembayaran));
-
-        case 7:
-          pembayaranData = _context4.sent;
-
-          if (!(pembayaranData.length > 0)) {
-            _context4.next = 22;
-            break;
-          }
-
-          _context4.next = 11;
-          return regeneratorRuntime.awrap(Model_Reservasi.Update(pembayaranData[0].id_reservasi, {
-            status: 'ditolak'
-          }));
-
-        case 11:
-          if (!(pembayaranData[0] && pembayaranData[0].id_user && typeof pembayaranData[0].id_user === 'number' && pembayaranData[0].id_user > 0)) {
-            _context4.next = 22;
-            break;
-          }
-
-          _context4.prev = 12;
-          Model_Notifikasi = require('../models/Model_Notifikasi');
-          notifData = {
-            id_user: pembayaranData[0].id_user,
-            judul: 'Pembayaran Ditolak',
-            isi_pesan: "Pembayaran Anda untuk arena ".concat(pembayaranData[0].nama_arena || 'Arena', " ditolak. ").concat(catatan_admin),
-            jenis_notif: 'status',
-            tipe: 'payment',
-            dibaca: 0
-          };
-          _context4.next = 17;
-          return regeneratorRuntime.awrap(Model_Notifikasi.Store(notifData));
-
-        case 17:
-          _context4.next = 22;
-          break;
-
-        case 19:
-          _context4.prev = 19;
-          _context4.t0 = _context4["catch"](12);
-          console.error('Failed to send notification:', _context4.t0); // Continue with rejection even if notification fails
-
-        case 22:
-          req.flash('error_msg', 'Pembayaran berhasil ditolak.');
-          res.redirect('/admin/pembayaran');
-          _context4.next = 31;
-          break;
-
-        case 26:
-          _context4.prev = 26;
-          _context4.t1 = _context4["catch"](0);
-          console.error(_context4.t1);
-          req.flash('error_msg', 'Gagal menolak pembayaran.');
-          res.redirect('/admin/pembayaran');
-
-        case 31:
-        case "end":
-          return _context4.stop();
-      }
-    }
-  }, null, null, [[0, 26], [12, 19]]);
+    });
+  });
 });
 module.exports = router;
 //# sourceMappingURL=pembayaran.dev.js.map

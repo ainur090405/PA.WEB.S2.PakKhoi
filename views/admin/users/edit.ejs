@@ -19,19 +19,31 @@
               <input type="email" class="form-control" id="email" name="email" value="<%= user.email %>" required>
             </div>
           </div>
+
           <div class="row">
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
               <label for="no_hp" class="form-label">No. HP</label>
               <input type="text" class="form-control" id="no_hp" name="no_hp" value="<%= user.no_hp %>" required>
             </div>
-            <div class="col-md-6 mb-3">
+
+            <div class="col-md-4 mb-3">
               <label for="role" class="form-label">Role</label>
               <select class="form-select" name="role" id="role" required>
                 <option value="pemain" <%= user.role === 'pemain' ? 'selected' : '' %>>Pemain</option>
-                <option value="admin" <%= user.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                <option value="admin"  <%= user.role === 'admin'  ? 'selected' : '' %>>Admin</option>
+              </select>
+            </div>
+
+            <!-- STATUS USER -->
+            <div class="col-md-4 mb-3">
+              <label for="status" class="form-label">Status User</label>
+              <select class="form-select" id="status" name="status" required>
+                <option value="aktif"    <%= user.status === 'aktif'    ? 'selected' : '' %>>Aktif</option>
+                <option value="nonaktif" <%= user.status === 'nonaktif' ? 'selected' : '' %>>Nonaktif</option>
               </select>
             </div>
           </div>
+
           <div class="mb-3">
             <label for="password" class="form-label">Password Baru</label>
             <input type="password" class="form-control" id="password" name="password">

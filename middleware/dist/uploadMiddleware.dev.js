@@ -3,36 +3,66 @@
 // middleware/uploadMiddleware.js
 var multer = require('multer');
 
-var path = require('path'); // 1. Tentukan lokasi penyimpanan DULU
+var path = require('path'); // ==============================
+// STORAGE UNTUK FOTO ARENA
+// ==============================
 
 
-var storage = multer.diskStorage({
+var storageArena = multer.diskStorage({
   destination: function destination(req, file, cb) {
-    cb(null, 'public/uploads/arena/');
+    cb(null, path.join(__dirname, '../public/uploads/arena/'));
   },
   filename: function filename(req, file, cb) {
-    var uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'arena-' + uniqueSuffix + path.extname(file.originalname));
+    var unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'arena-' + unique + path.extname(file.originalname));
   }
-}); // 2. Tentukan filter file KEMUDIAN
+}); // ==============================
+// STORAGE UNTUK BUKTI PEMBAYARAN
+// ==============================
+
+var storageBukti = multer.diskStorage({
+  destination: function destination(req, file, cb) {
+    cb(null, path.join(__dirname, '../public/uploads/bukti_pembayaran/'));
+  },
+  filename: function filename(req, file, cb) {
+    var unique = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'bukti_' + unique + path.extname(file.originalname));
+  }
+}); // ==============================
+// FILTER FILE GAMBAR
+// ==============================
 
 var fileFilter = function fileFilter(req, file, cb) {
   if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png' || file.mimetype === 'image/jpg') {
-    cb(null, true); // Terima file
+    cb(null, true);
   } else {
-    cb(new Error('Hanya file JPEG, JPG, atau PNG yang diizinkan!'), false); // Tolak file
+    cb(new Error('Hanya file JPG, JPEG, PNG yang diizinkan!'), false);
   }
-}; // 3. BARU buat konfigurasi upload utama
+}; // ==============================
+// MIDDLEWARE UPLOAD ARENA
+// ==============================
 
 
-var upload = multer({
-  storage: storage,
+var uploadArena = multer({
+  storage: storageArena,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 1024 * 1024 * 5 // Batas 5MB
-
+    fileSize: 1024 * 1024 * 5
   }
-}); // 4. Terakhir, export
+}); // ==============================
+// MIDDLEWARE UPLOAD BUKTI PEMBAYARAN
+// ==============================
 
-module.exports = upload;
+var uploadBuktiPembayaran = multer({
+  storage: storageBukti,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 1024 * 1024 * 5
+  }
+}); // EXPORT
+
+module.exports = {
+  uploadArena: uploadArena,
+  uploadBuktiPembayaran: uploadBuktiPembayaran
+};
 //# sourceMappingURL=uploadMiddleware.dev.js.map

@@ -16,12 +16,12 @@ var Model_Arena = require('../models/Model_Arena');
 
 var Model_FotoArena = require('../models/Model_FotoArena');
 
-var upload = require('../middleware/uploadMiddleware'); // <-- 'Multer' dipakai di sini
+var _require = require('../middleware/uploadMiddleware'),
+    uploadArena = _require.uploadArena;
 
-
-var _require = require('../middleware/authMiddleware'),
-    isAuthenticated = _require.isAuthenticated,
-    isAdmin = _require.isAdmin;
+var _require2 = require('../middleware/authMiddleware'),
+    isAuthenticated = _require2.isAuthenticated,
+    isAdmin = _require2.isAdmin;
 
 var fs = require('fs'); // Untuk hapus file
 
@@ -97,7 +97,7 @@ router.get('/manage/:id_arena', function _callee(req, res) {
  * Menerima upload (bisa banyak file) dan menyimpannya.
  */
 
-router.post('/store/:id_arena', upload.array('foto_galeri', 10), function _callee2(req, res) {
+router.post('/store/:id_arena', uploadArena.array('foto_galeri', 10), function _callee2(req, res) {
   var id_arena, deskripsi, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, file, dataFoto;
 
   return regeneratorRuntime.async(function _callee2$(_context2) {

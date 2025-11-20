@@ -54,8 +54,7 @@ function () {
           }
         }
       });
-    } // Ganti nama 'Login' menjadi 'getByEmail' agar lebih jelas
-
+    }
   }, {
     key: "getByEmail",
     value: function getByEmail(email) {

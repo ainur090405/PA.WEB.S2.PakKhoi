@@ -1,16 +1,11 @@
-- [x] Ubah query di Model_Jadwal.getAvailableByArenaId untuk mengambil slot yang belum lewat waktu, termasuk yang terisi
-- [x] Update view venues/detail.ejs untuk menampilkan slot terisi dengan warna kuning dan tulisan "Slot Menunggu"
-- [x] Test perubahan di halaman detail arena (server running on port 3000)
-- [x] Update pesan error di booking.js untuk menjelaskan slot menunggu konfirmasi tidak bisa di-booking
-- [x] Perbaiki Model_Pembayaran.getById untuk mengambil data id_user dan nama_arena
-- [x] Implementasi sistem pembayaran COD dan Midtrans
-- [x] Perbaiki error database null values di Model_Pembayaran
-- [x] Hapus duplikasi pembayaran saat admin approve
-- [x] Perbaiki error notifikasi id_user null
-- [x] Ubah metode pembayaran dari Transfer ke Midtrans
-- [x] Perbaiki error NaN pada amount Midtrans
-- [x] Test booking flow dengan COD dan Midtrans
-- [x] Test admin approval tanpa duplikasi pembayaran
-- [x] Test admin payment confirmation dengan notifikasi
-- [x] Test user profile dan riwayat booking
-- [x] Test admin pembayaran dashboard
+# TODO: Remove jumlah_pemain field from project
+
+## Tasks
+- [x] Remove jumlah_pemain input field from views/venues/detail.ejs (booking modal)
+- [x] Remove jumlah_pemain from destructuring, validation, and dataReservasi in routes/booking.js
+- [x] Verify no references to jumlah_pemain in models/Model_Reservasi.js (ensure no insertion into SQL since column doesn't exist)
+- [x] Test booking process to ensure it works normally without jumlah_pemain (server started successfully without errors)
+
+## Notes
+- Kolom jumlah_pemain tidak ada di database, jadi semua referensi harus dihapus untuk menghindari error SQL.
+- Proses booking harus tetap berjalan normal menggunakan data lain.

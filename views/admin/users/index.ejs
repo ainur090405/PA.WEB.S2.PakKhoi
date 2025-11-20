@@ -1,59 +1,146 @@
 <%- include('../../partials/_header', { title: title }) %>
-
 <%- include('../../partials/_messages') %>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h2><i class="bi bi-people-fill"></i> <%= title %></h2>
+  <div>
+    <h2 class="fw-bold text-primary mb-1">
+      <i class="bi bi-people-fill me-2"></i> <%= title %>
+    </h2>
+    <p class="text-muted mb-0">Kelola data akun pengguna sistem</p>
+  </div>
+
+  <!-- TOMBOL TAMBAH USER DIKEMBALIKAN -->
   <a href="/users/create" class="btn btn-primary">
-    <i class="bi bi-plus-circle me-2"></i> Tambah User Baru
+    <i class="bi bi-plus-circle me-1"></i> Tambah User Baru
   </a>
 </div>
 
 <div class="card shadow-sm border-0">
   <div class="card-body">
+
+    <!-- FILTER BAR -->
+    <div class="row mb-3">
+      <div class="col-md-3 mb-2">
+        <label class="form-label mb-1">Filter Role</label>
+        <select id="filterRole" class="form-select form-select-sm">
+          <option value="">Semua Role</option>
+          <option value="Admin">Admin</option>
+          <option value="Pemain">Pemain</option>
+        </select>
+      </div>
+
+      <div class="col-md-3 mb-2">
+        <label class="form-label mb-1">Filter Status</label>
+        <select id="filterStatus" class="form-select form-select-sm">
+          <option value="">Semua Status</option>
+          <option value="Aktif">Aktif</option>
+          <option value="Nonaktif">Nonaktif</option>
+        </select>
+      </div>
+    </div>
+
     <div class="table-responsive">
-      <table class="table table-hover align-middle">
+      <table id="usersTable" class="table table-hover align-middle">
         <thead class="table-light">
           <tr>
             <th>ID</th>
             <th>Nama</th>
             <th>Email</th>
-            <th>No. HP</th>
             <th>Role</th>
-            <th>Tgl. Daftar</th>
+            <th>No HP</th>
+            <th>Terdaftar</th>
+            <th>Status</th>
             <th>Aksi</th>
           </tr>
         </thead>
+
         <tbody>
-          <% data.forEach(user => { %>
+          <% data.forEach(u => { %>
             <tr>
-              <td><%= user.id_user %></td>
-              <td><%= user.nama %></td>
-              <td><%= user.email %></td>
-              <td><%= user.no_hp %></td>
+              <td><%= u.id_user %></td>
+              <td><%= u.nama %></td>
+              <td><%= u.email %></td>
+
               <td>
-                <% if (user.role === 'admin') { %>
-                  <span class="badge bg-success">Admin</span>
+                <% if (u.role === 'admin') { %>
+                  <span class="badge bg-danger">Admin</span>
+                <% } else if (u.role === 'pemain') { %>
+                  <span class="badge bg-primary">Pemain</span>
                 <% } else { %>
-                  <span class="badge bg-secondary">Pemain</span>
+                  <span class="badge bg-secondary"><%= u.role || '-' %></span>
                 <% } %>
               </td>
-              <td><%= new Date(user.tanggal_daftar).toLocaleDateString('id-ID') %></td>
+
+              <td><%= u.no_hp || '-' %></td>
+
+              <td data-order="<%= new Date(u.tanggal_daftar).getTime() %>">
+                <%= new Date(u.tanggal_daftar).toLocaleDateString('id-ID') %>
+              </td>
+
               <td>
-                <a href="/users/edit/<%= user.id_user %>" class="btn btn-sm btn-outline-warning">
-                  <i class="bi bi-pencil-fill"></i>
+                <% const st = u.status || 'aktif'; %>
+                <% if (st === 'aktif') { %>
+                  <span class="badge bg-success">Aktif</span>
+                <% } else { %>
+                  <span class="badge bg-secondary">Nonaktif</span>
+                <% } %>
+              </td>
+
+              <td>
+                <a href="/users/edit/<%= u.id_user %>" class="btn btn-sm btn-outline-warning">
+                  <i class="bi bi-pencil-square"></i>
                 </a>
-                <a href="/users/delete/<%= user.id_user %>" class="btn btn-sm btn-outline-danger" 
-                   onclick="return confirm('Yakin hapus user <%= user.nama %>?')">
-                  <i class="bi bi-trash-fill"></i>
+                <a href="/users/delete/<%= u.id_user %>" class="btn btn-sm btn-outline-danger"
+                   onclick="return confirm('Yakin ingin menghapus user ini?')">
+                  <i class="bi bi-trash"></i>
                 </a>
               </td>
             </tr>
           <% }) %>
         </tbody>
+
       </table>
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const table = $('#usersTable').DataTable({
+      pageLength: 10,
+      lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'Semua']],
+      order: [[5, 'desc']],
+      columnDefs: [
+        { orderable: false, targets: 7 }
+      ],
+      language: {
+        lengthMenu: "Tampilkan _MENU_ data per halaman",
+        zeroRecords: "Tidak ada data yang ditemukan",
+        info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+        infoEmpty: "Tidak ada data tersedia",
+        infoFiltered: "(difilter dari _MAX_ total data)",
+        search: "Cari:",
+        paginate: {
+          first: "Pertama",
+          last: "Terakhir",
+          next: "Selanjutnya",
+          previous: "Sebelumnya"
+        }
+      }
+    });
+
+    // FILTER ROLE
+    document.getElementById('filterRole').addEventListener('change', function () {
+      const val = this.value;
+      table.column(3).search(val || '', true, false).draw();
+    });
+
+    // FILTER STATUS
+    document.getElementById('filterStatus').addEventListener('change', function () {
+      const val = this.value;
+      table.column(6).search(val || '', true, false).draw();
+    });
+  });
+</script>
 
 <%- include('../../partials/_footer') %>

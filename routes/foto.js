@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Model_Arena = require('../models/Model_Arena');
 const Model_FotoArena = require('../models/Model_FotoArena');
-const upload = require('../middleware/uploadMiddleware'); // <-- 'Multer' dipakai di sini
+const { uploadArena } = require('../middleware/uploadMiddleware');
 const { isAuthenticated, isAdmin } = require('../middleware/authMiddleware');
 const fs = require('fs'); // Untuk hapus file
 const path = require('path'); // Untuk hapus file
@@ -49,7 +49,7 @@ router.get('/manage/:id_arena', async (req, res) => {
  * =======================================================
  * Menerima upload (bisa banyak file) dan menyimpannya.
  */
-router.post('/store/:id_arena', upload.array('foto_galeri', 10), async (req, res) => {
+router.post('/store/:id_arena', uploadArena.array('foto_galeri', 10), async (req, res) => {
   // 'foto_galeri' adalah 'name' dari input file, '10' adalah batas max file
   const id_arena = req.params.id_arena;
   try {

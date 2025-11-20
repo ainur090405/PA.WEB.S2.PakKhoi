@@ -1,0 +1,390 @@
+<%- include('../partials/_header', { title: title }) %>
+<%- include('../partials/_messages') %>
+
+<style>
+  .table thead { background: #28c76f; color: #fff; }
+  .table th { font-weight: 600; text-transform: uppercase; font-size: 0.9rem; }
+  .card-header { background: #f8f9fa; font-weight: 600; border-bottom: 2px solid #28c76f; }
+  .badge { padding: 6px 10px; font-size: 0.85rem; }
+
+  .table td, .table th {
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  @media (max-width: 768px) {
+    .table td, .table th { white-space: normal; }
+  }
+
+  .payment-cell {
+    display: inline-flex;
+    gap: 0.6rem;
+    align-items: center;
+    flex-wrap: nowrap;
+    vertical-align: middle;
+  }
+  .payment-cell .meta { display:inline-flex; align-items:center; gap:0.35rem; font-size:0.92rem; }
+  .payment-cell .btn-detail { margin-left: 0.25rem; }
+</style>
+
+<div class="container py-4">
+
+  <!-- ========================= -->
+  <!-- RIWAYAT PEMESANAN -->
+  <!-- ========================= -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header">
+      <i class="bi bi-journal-text me-2 text-success"></i> Riwayat Pemesanan (<%= reservasi.length %>)
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Arena</th>
+              <th>Tgl. Main</th>
+              <th>Jam</th>
+              <th>Status</th>
+              <th>Pembayaran</th>
+              <th>Jumlah</th>
+              <th>Ulasan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (reservasi.length > 0) { %>
+              <% reservasi.forEach(r => { %>
+                <tr>
+                  <td><strong><%= r.nama_arena %></strong></td>
+                  <td><%= r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID') : '-' %></td>
+                  <td>
+                    <%= r.jam_mulai ? r.jam_mulai.substring(0,5) : '-' %> -
+                    <%= r.jam_selesai ? r.jam_selesai.substring(0,5) : '-' %>
+                  </td>
+                  <td>
+                    <% if(r.status == 'selesai') { %>
+                      <span class="badge bg-success">Selesai</span>
+                    <% } else if (r.status == 'disetujui') { %>
+                      <span class="badge bg-info text-dark">Disetujui</span>
+                    <% } else if (r.status == 'menunggu') { %>
+                      <span class="badge bg-warning text-dark">Menunggu</span>
+                    <% } else { %>
+                      <span class="badge bg-danger">Ditolak</span>
+                    <% } %>
+                  </td>
+
+                  <!-- PEMBAYARAN -->
+                  <td>
+                    <% const metode = r.pembayaran_metode; %>
+
+                    <% if (metode === 'cod') { %>
+                      <div class="payment-cell">
+                        <span class="badge bg-primary">COD</span>
+                        <span class="meta">
+                          <small class="text-muted">
+                            <%= r.pembayaran_status || 'unpaid' %>
+                          </small>
+                        </span>
+                      </div>
+
+                    <% } else if (metode === 'transaksi') { %>
+                      <% const buktiExists = !!r.pembayaran_bukti; %>
+                      <div class="payment-cell">
+                        <span class="badge bg-secondary">Transfer</span>
+
+                        <span class="meta">
+                          <% if (buktiExists) { %>
+                            <small class="text-success">
+                              <i class="bi bi-check-circle"></i> Bukti Ada
+                            </small>
+                          <% } else { %>
+                            <small class="text-danger">
+                              <i class="bi bi-exclamation-triangle"></i> Belum Upload
+                            </small>
+                          <% } %>
+                        </span>
+
+                        <button class="btn btn-sm btn-info btn-detail"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalDetailPembayaran"
+                          data-id="<%= r.id_reservasi %>">
+                          <i class="bi bi-eye"></i> Detail
+                        </button>
+                      </div>
+
+                    <% } else { %>
+                      <span class="badge bg-light text-dark">-</span>
+                    <% } %>
+                  </td>
+
+                  <td>
+                    <% const jml = r.pembayaran_jumlah || 0; %>
+                    <%= jml > 0 ? 'Rp ' + Number(jml).toLocaleString('id-ID') : '-' %>
+                  </td>
+
+                  <!-- ULASAN -->
+                  <td>
+                    <% if (r.status === 'selesai') { %>
+                      <% if (!r.sudah_ulasan) { %>
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal"
+                          data-bs-target="#modalUlasan"
+                          data-id="<%= r.id_reservasi %>"
+                          data-nama="<%= r.nama_arena %>"
+                          data-mode="create">
+                          <i class="bi bi-star me-1"></i> Beri Ulasan
+                        </button>
+                      <% } else { %>
+                        <button class="btn btn-sm btn-warning text-white" data-bs-toggle="modal"
+                          data-bs-target="#modalUlasan"
+                          data-id="<%= r.id_reservasi %>"
+                          data-nama="<%= r.nama_arena %>"
+                          data-mode="edit">
+                          <i class="bi bi-pencil-square me-1"></i> Edit
+                        </button>
+                      <% } %>
+                    <% } else { %>
+                      <span class="text-muted">-</span>
+                    <% } %>
+                  </td>
+
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr><td colspan="7" class="text-center text-muted">Belum ada riwayat pemesanan.</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================= -->
+  <!-- RIWAYAT ULASAN SAYA -->
+  <!-- ========================= -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header">
+      <i class="bi bi-star-fill me-2 text-warning"></i> Riwayat Ulasan Saya (<%= ulasan.length %>)
+    </div>
+
+    <div class="card-body">
+      <% if (ulasan.length > 0) { %>
+        <% ulasan.forEach(u => { %>
+          <div class="mb-3 border-bottom pb-2">
+            <strong><%= u.nama_arena %></strong>
+            <div>
+              <% for(let i = 0; i < u.rating; i++) { %>
+                <i class="bi bi-star-fill text-warning"></i>
+              <% } %>
+              <% for(let i = 0; i < (5 - u.rating); i++) { %>
+                <i class="bi bi-star text-warning"></i>
+              <% } %>
+            </div>
+            <p class="mb-0 fst-italic text-muted">"<%= u.komentar %>"</p>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <p class="text-center text-muted mb-0">Belum ada ulasan.</p>
+      <% } %>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========================= -->
+<!-- MODAL ULASAN -->
+<!-- ========================= -->
+<div class="modal fade" id="modalUlasan" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="formUlasan" method="POST">
+      <div class="modal-content">
+
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">Beri Ulasan</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="hidden" id="id_reservasi" name="id_reservasi">
+
+          <div class="mb-3">
+            <label class="form-label">Arena</label>
+            <input type="text" id="nama_arena" class="form-control" disabled>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Rating</label>
+            <select class="form-select" name="rating" required>
+              <option value="">Pilih Rating</option>
+              <% for(let i=1;i<=5;i++) { %>
+                <option value="<%= i %>"><%= i %> ★</option>
+              <% } %>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Komentar</label>
+            <textarea class="form-control" name="komentar"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-success" type="submit">Simpan</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ========================= -->
+<!-- MODAL DETAIL PEMBAYARAN -->
+<!-- ========================= -->
+<div class="modal fade" id="modalDetailPembayaran" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-receipt me-2"></i>
+          Detail Pembayaran
+        </h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body" id="detailPembayaranContent">
+        <div class="text-center">
+          <div class="spinner-border text-primary"></div>
+          <p class="mt-2">Memuat...</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ========================= -->
+<!-- SCRIPT -->
+<!-- ========================= -->
+<script>
+  const modalUlasan = document.getElementById('modalUlasan');
+  const modalDetailPembayaran = document.getElementById('modalDetailPembayaran');
+
+  // SETUP ULASAN
+  if (modalUlasan) {
+    modalUlasan.addEventListener('show.bs.modal', e => {
+      const btn = e.relatedTarget;
+      const id = btn.dataset.id;
+      const nama = btn.dataset.nama;
+      const mode = btn.dataset.mode;
+
+      const form = document.getElementById('formUlasan');
+      form.reset();
+      document.getElementById('nama_arena').value = nama;
+      document.getElementById('id_reservasi').value = id;
+
+      form.action =
+        mode === 'edit'
+        ? `/pemain/ulasan/update/${id}`
+        : `/pemain/ulasan/create/${id}`;
+    });
+  }
+
+  // SETUP MODAL DETAIL PEMBAYARAN
+  if (modalDetailPembayaran) {
+    modalDetailPembayaran.addEventListener('show.bs.modal', e => {
+      const id = e.relatedTarget.dataset.id;
+      const box = document.getElementById('detailPembayaranContent');
+
+      box.innerHTML = `
+        <div class="text-center">
+          <div class="spinner-border text-primary"></div>
+          <p class="mt-2">Memuat...</p>
+        </div>
+      `;
+
+      fetch(`/pemain/detail-pembayaran/${id}`)
+        .then(res => res.json())
+        .then(x => {
+          if (!x.success) {
+            box.innerHTML = '<div class="alert alert-danger">Gagal memuat data</div>';
+            return;
+          }
+
+          const p = x.pembayaran || {};
+          const r = x.reservasi || {};
+
+          const jumlah = (p.jumlah != null ? p.jumlah : (r.pembayaran_jumlah || 0));
+
+          let html = `
+            <h5>Informasi Reservasi</h5>
+            <table class="table table-sm">
+              <tr><td>Arena</td><td>: ${r.nama_arena || '-'}</td></tr>
+              <tr><td>Tanggal</td><td>: ${r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID') : '-'}</td></tr>
+              <tr><td>Jam</td><td>: ${r.jam_mulai ? r.jam_mulai.substring(0,5) : '-'} - ${r.jam_selesai ? r.jam_selesai.substring(0,5) : '-'}</td></tr>
+            </table>
+
+            <h5 class="mt-4">Detail Pembayaran</h5>
+            <table class="table table-sm">
+              <tr><td>Metode</td><td>: ${p.metode_pembayaran || r.pembayaran_metode || 'transaksi'}</td></tr>
+              <tr><td>Jumlah</td><td>: Rp ${Number(jumlah).toLocaleString('id-ID')}</td></tr>
+              <tr><td>Status</td><td>: ${p.status_pembayaran || r.pembayaran_status || '-'}</td></tr>
+              <tr><td>Tanggal</td><td>: ${p.tanggal_pembayaran
+                ? new Date(p.tanggal_pembayaran).toLocaleString('id-ID')
+                : (r.pembayaran_tanggal ? new Date(r.pembayaran_tanggal).toLocaleString('id-ID') : '-')
+              }</td></tr>
+            </table>
+          `;
+
+          // cari file bukti
+          const buktiFile = p.bukti_pembayaran || r.pembayaran_bukti || null;
+
+          if (!buktiFile) {
+            html += `
+              <h5 class="mt-4">Upload Bukti Pembayaran</h5>
+              <form action="/pemain/upload-bukti/${r.id_reservasi}" method="POST" enctype="multipart/form-data">
+                <input type="file" name="bukti_pembayaran" class="form-control mb-3" accept="image/*" required>
+                <button class="btn btn-primary">
+                  <i class="bi bi-upload"></i> Upload
+                </button>
+              </form>
+            `;
+          } else {
+            html += `
+              <h5 class="mt-4 mb-2">Bukti Pembayaran</h5>
+              <div class="text-center mb-3">
+                <a href="/uploads/bukti_pembayaran/${buktiFile}" target="_blank">
+                  <img src="/uploads/bukti_pembayaran/${buktiFile}" class="img-fluid rounded shadow" style="max-height:400px;">
+                </a>
+              </div>
+
+              <div class="d-flex gap-2 justify-content-center mb-3">
+                <a href="/pemain/download-pdf/${r.id_reservasi}" class="btn btn-success" target="_blank">
+                  <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                </a>
+              </div>
+            `;
+          }
+
+          const catatan = p.catatan_admin || r.pembayaran_catatan || null;
+          if (catatan) {
+            html += `
+              <div class="mt-3">
+                <h6 class="text-muted mb-2">
+                  <i class="bi bi-chat-quote me-2"></i>Catatan Admin
+                </h6>
+                <p class="text-muted fst-italic">${catatan}</p>
+              </div>
+            `;
+          }
+
+          box.innerHTML = html;
+        })
+        .catch(err => {
+          console.error('Detail pembayaran fetch error:', err);
+          box.innerHTML = '<div class="alert alert-danger">Terjadi kesalahan saat memuat data.</div>';
+        });
+    });
+  }
+</script>
+
+<%- include('../partials/_footer') %>

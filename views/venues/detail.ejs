@@ -115,8 +115,7 @@
       <% if (jadwal.length > 0) { %>
         <p class="mb-4">Berikut jadwal yang tersedia untuk dipesan:</p>
 
-<%
-          // Kelompokkan jadwal berdasarkan tanggal
+        <%
           const grouped = {};
           jadwal.forEach(j => {
             const tanggal = new Date(j.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -127,7 +126,10 @@
 
         <% Object.keys(grouped).forEach(hari => { %>
           <div class="mb-4">
-            <button class="btn btn-outline-success w-100 mb-3 d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<%= hari.replace(/\s+/g, '').replace(/,/g, '') %>" aria-expanded="false" aria-controls="collapse<%= hari.replace(/\s+/g, '').replace(/,/g, '') %>">
+            <button class="btn btn-outline-success w-100 mb-3 d-flex justify-content-between align-items-center"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapse<%= hari.replace(/\s+/g, '').replace(/,/g, '') %>">
               <h5 class="fw-bold mb-0">
                 <i class="bi bi-calendar-event me-2"></i> <%= hari %>
               </h5>
@@ -139,27 +141,39 @@
                 <div class="row g-3">
                   <% grouped[hari].forEach(j => { %>
                     <div class="col-12 col-md-4 col-lg-3">
-                      <div class="border rounded-3 p-3 text-center shadow-sm <%= j.status_slot === 'terisi' ? 'bg-secondary text-white' : j.status_slot === 'menunggu' ? 'bg-warning text-dark' : 'bg-primary text-white' %> h-100 d-flex flex-column justify-content-between">
+                      <div class="border rounded-3 p-3 text-center shadow-sm
+                        <%= j.status_slot === 'terisi' ? 'bg-secondary text-white'
+                          : j.status_slot === 'menunggu' ? 'bg-warning text-dark'
+                          : 'bg-primary text-white' %>
+                        h-100 d-flex flex-column justify-content-between">
+
                         <div>
                           <div class="fw-semibold mb-1">
                             <%= j.jam_mulai.substring(0,5) %> - <%= j.jam_selesai.substring(0,5) %>
                           </div>
                           <div class="small">
-                            <%= j.status_slot === 'terisi' ? 'Tidak Tersedia' : j.status_slot === 'menunggu' ? 'Menunggu Konfirmasi' : 'Slot Tersedia' %>
+                            <%= j.status_slot === 'terisi' ? 'Tidak Tersedia'
+                              : j.status_slot === 'menunggu' ? 'Menunggu Konfirmasi'
+                              : 'Slot Tersedia' %>
                           </div>
-                          <% if (j.status_slot === 'menunggu') { %>
-                            <div class="badge bg-warning text-dark mt-1">Menunggu Konfirmasi</div>
-                          <% } %>
                         </div>
+
                         <% if (j.status_slot === 'kosong') { %>
-                          <button type="button" class="btn btn-light text-dark" data-bs-toggle="modal" data-bs-target="#bookingModal" data-id-jadwal="<%= j.id_jadwal %>" data-jam="<%= j.jam_mulai.substring(0,5) %> - <%= j.jam_selesai.substring(0,5) %>" data-tanggal="<%= hari %>">
+                          <button type="button"
+                            class="btn btn-light text-dark"
+                            data-bs-toggle="modal"
+                            data-bs-target="#bookingModal"
+                            data-id-jadwal="<%= j.id_jadwal %>"
+                            data-jam="<%= j.jam_mulai.substring(0,5) %> - <%= j.jam_selesai.substring(0,5) %>"
+                            data-tanggal="<%= hari %>">
                             Booking
                           </button>
                         <% } else { %>
-                          <button type="button" class="btn btn-secondary" disabled style="background-color: #6c757d !important; border-color: #6c757d !important;">
+                          <button type="button" class="btn btn-secondary" disabled>
                             <%= j.status_slot === 'terisi' ? 'Tidak Tersedia' : 'Menunggu' %>
                           </button>
                         <% } %>
+
                       </div>
                     </div>
                   <% }) %>
@@ -172,31 +186,32 @@
       <% } else { %>
         <div class="alert alert-warning text-center rounded-3 py-4">
           <h5 class="fw-bold mb-2">Jadwal Penuh</h5>
-          <p class="mb-0">Belum ada jadwal kosong untuk arena ini. Coba cek beberapa hari ke depan.</p>
+          <p class="mb-0">Belum ada jadwal kosong untuk arena ini.</p>
         </div>
       <% } %>
+
     </div>
   </div>
 </div>
 
 <!-- Booking Modal -->
-<div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+<div class="modal fade" id="bookingModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="bookingModalLabel">Konfirmasi Booking</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="mb-3">
-          <h5 class="text-center mb-3">Konfirmasi Booking</h5>
-          <p class="text-muted text-center mb-3">Pastikan detail booking sudah benar</p>
 
-          <div class="card bg-light">
-            <div class="card-body">
-              <p id="modalInfoSesi" class="mb-2"><strong>Sesi:</strong> Loading...</p>
-              <p id="modalInfoHarga" class="mb-0"><strong>Harga:</strong> Loading...</p>
-            </div>
+      <div class="modal-header">
+        <h5 class="modal-title">Konfirmasi Booking</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <h5 class="text-center mb-3">Konfirmasi Booking</h5>
+        <p class="text-muted text-center mb-3">Pastikan detail booking sudah benar</p>
+
+        <div class="card bg-light mb-3">
+          <div class="card-body">
+            <p id="modalInfoSesi" class="mb-2"><strong>Sesi:</strong> Loading...</p>
+            <p id="modalInfoHarga" class="mb-0"><strong>Harga:</strong> Loading...</p>
           </div>
         </div>
 
@@ -204,58 +219,62 @@
           <input type="hidden" name="id_jadwal" id="modalBookingIdJadwal">
 
           <div class="mb-3">
-            <label for="payment_method" class="form-label">Metode Pembayaran</label>
+            <label class="form-label">Metode Pembayaran</label>
             <select class="form-select" name="payment_method" id="payment_method" required>
               <option value="">Pilih Metode</option>
-              <option value="cod">COD (Cash on Delivery)</option>
-              <option value="midtrans">Midtrans (Online Payment)</option>
+              <option value="transaksi">Transfer Bank</option>
+              <option value="cod">COD</option>
             </select>
           </div>
-          <div class="mb-3" id="amountField" style="display: none;">
-            <label for="amount" class="form-label">Jumlah Pembayaran (Rp)</label>
-            <input type="number" class="form-control" name="amount" id="amount" placeholder="Masukkan jumlah">
+
+          <div class="mb-3">
+            <label class="form-label">Jumlah Pembayaran (Rp)</label>
+            <input type="number" class="form-control" name="amount" id="amount" readonly>
+            <small class="text-muted">Untuk Transfer: Upload bukti & rekening di halaman Riwayat.</small>
           </div>
+
         </form>
       </div>
+
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
         <button type="submit" form="bookingForm" class="btn btn-primary">Konfirmasi Booking</button>
       </div>
+
     </div>
   </div>
 </div>
 
 <%- include('../partials/_footer') %>
+
 <script>
-  // Ambil elemen modal
   const bookingModal = document.getElementById('bookingModal');
+  const pmSelect = document.getElementById('payment_method');
+  const amountInput = document.getElementById('amount');
 
   bookingModal.addEventListener('show.bs.modal', function (event) {
-    const button = event.relatedTarget;
-    const idJadwal = button.getAttribute('data-id-jadwal');
-    const jam = button.getAttribute('data-jam');
-    const tanggal = button.getAttribute('data-tanggal');
+    const btn = event.relatedTarget;
+    document.getElementById('modalBookingIdJadwal').value = btn.getAttribute('data-id-jadwal');
+    document.getElementById('modalInfoSesi').textContent =
+      `Tanggal: ${btn.getAttribute('data-tanggal')}, Jam: ${btn.getAttribute('data-jam')}`;
 
-    document.getElementById('modalInfoSesi').textContent = `Tanggal: ${tanggal}, Jam: ${jam}`;
-    document.getElementById('modalBookingIdJadwal').value = idJadwal;
-
-    // ✅ Nilai harga dimasukkan lewat atribut data, bukan ekspresi langsung
     const hargaArena = parseInt('<%= arena.harga || 0 %>') || 0;
-    document.getElementById('modalInfoHarga').textContent = `Harga: Rp ${hargaArena.toLocaleString('id-ID')}`;
+    document.getElementById('modalInfoHarga').textContent =
+      `Harga: Rp ${hargaArena.toLocaleString('id-ID')}`;
+
+    amountInput.value = hargaArena;
+    pmSelect.value = "";
   });
 
-  document.getElementById('payment_method').addEventListener('change', function() {
-    const amountField = document.getElementById('amountField');
+  pmSelect.addEventListener('change', function () {
     const hargaArena = parseInt('<%= arena.harga || 0 %>') || 0;
 
-    if (this.value === 'midtrans') {
-      amountField.style.display = 'block';
-      document.getElementById('amount').required = true;
-      document.getElementById('amount').value = hargaArena;
+    if (this.value === "transaksi") {
+      amountInput.value = hargaArena;
+    } else if (this.value === "cod") {
+      amountInput.value = 0;
     } else {
-      amountField.style.display = 'none';
-      document.getElementById('amount').required = false;
+      amountInput.value = "";
     }
   });
 </script>
-
