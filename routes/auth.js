@@ -117,5 +117,51 @@ router.get('/logout', (req, res) => {
     res.redirect('/auth/login');
   });
 });
+// Lupa Password - Form Email
+router.get('/lupa-password', (req, res) => {
+  res.render('auth/lupa_password', {
+    title: 'Lupa Password'
+  });
+});
+router.post('/lupa-password', async (req, res) => {
+  const { email } = req.body;
+
+  const user = await Model_Users.getByEmail(email);
+
+  if (!user || user.length === 0) {
+    req.flash('error', 'Email tidak ditemukan.');
+    return res.redirect('/auth/lupa-password');
+  }
+
+  res.render('auth/reset_password_simple', {
+    title: 'Reset Password',
+    id_user: user[0].id_user,
+    email: user[0].email    
+  });
+});
+
+router.post('/reset-password-simple', async (req, res) => {
+  const { id_user, password, password_confirm } = req.body;
+
+  if (password !== password_confirm) {
+    req.flash('error', 'Konfirmasi password tidak sama.');
+    return res.redirect('back');
+  }
+
+  if (password.length < 6) {
+    req.flash('error', 'Password minimal 6 karakter.');
+    return res.redirect('back');
+  }
+
+  const bcrypt = require('bcryptjs');
+  const hash = await bcrypt.hash(password, 10);
+
+  // 🔥 GUNAKAN KOLOM YANG BENAR
+  await Model_Users.Update(id_user, { password_hash: hash });
+
+  req.flash('success', 'Password berhasil diubah. Silakan login kembali.');
+  res.redirect('/auth/login');
+});
+
 
 module.exports = router;

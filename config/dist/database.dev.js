@@ -20,7 +20,7 @@ connection.connect(function (err) {
     return;
   }
 
-  console.log('✅ oke nyambung bang ke database arenago');
+  console.log('✅ oke nyambung bang');
 });
 module.exports = connection;
 //# sourceMappingURL=database.dev.js.map

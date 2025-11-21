@@ -254,7 +254,7 @@ router.post('/reject/:id_pembayaran', function (req, res) {
             id_reservasi = bayar.id_reservasi; // 2) update pembayaran -> rejected
 
             connection.query("UPDATE pembayaran\n         SET status_pembayaran = 'rejected',\n             konfirmasi_admin = 1,\n             catatan_admin = ?,\n             updated_at = NOW()\n         WHERE id_pembayaran = ?", [catatan_admin || null, id_pembayaran], function _callee4(err2) {
-              var rowsReservasiBefore, reservasiBefore, statusAwal, rowsReservasi, _rowsReservasi, r;
+              var rowsReservasiBefore, reservasiBefore, statusAwal, rowsReservasi, _rowsReservasi, r, alasan;
 
               return regeneratorRuntime.async(function _callee4$(_context4) {
                 while (1) {
@@ -338,46 +338,48 @@ router.post('/reject/:id_pembayaran', function (req, res) {
                       r = _rowsReservasi && _rowsReservasi[0] ? _rowsReservasi[0] : null;
 
                       if (!(r && r.id_user)) {
-                        _context4.next = 39;
+                        _context4.next = 40;
                         break;
                       }
 
-                      _context4.next = 39;
+                      // ⬇️ alasan default kalau admin tidak isi catatan
+                      alasan = catatan_admin && catatan_admin.trim() !== '' ? catatan_admin : 'Pembayaran ditolak karena data tidak lengkap atau batas waktu upload bukti pembayaran sudah habis.';
+                      _context4.next = 40;
                       return regeneratorRuntime.awrap(Model_Notifikasi.Store({
                         id_user: r.id_user,
                         judul: 'Pembayaran Ditolak',
-                        isi_pesan: "Pembayaran Anda untuk arena ".concat(r.nama_arena || 'Arena', " ditolak. ").concat(catatan_admin || ''),
+                        isi_pesan: "Pembayaran Anda untuk arena ".concat(r.nama_arena || 'Arena', " ditolak. ").concat(alasan),
                         jenis_notif: 'status',
                         tipe: 'payment',
                         dibaca: 0
                       }));
 
-                    case 39:
-                      _context4.next = 44;
+                    case 40:
+                      _context4.next = 45;
                       break;
 
-                    case 41:
-                      _context4.prev = 41;
+                    case 42:
+                      _context4.prev = 42;
                       _context4.t1 = _context4["catch"](31);
                       console.warn('Gagal kirim notif tolak pembayaran:', _context4.t1);
 
-                    case 44:
+                    case 45:
                       req.flash('success_msg', 'Pembayaran berhasil ditolak.');
                       return _context4.abrupt("return", res.redirect('/admin/pembayaran'));
 
-                    case 48:
-                      _context4.prev = 48;
+                    case 49:
+                      _context4.prev = 49;
                       _context4.t2 = _context4["catch"](4);
                       console.error('ERR AFTER UPDATE pembayaran (reject):', _context4.t2);
                       req.flash('error_msg', 'Pembayaran terupdate, tapi terjadi error lanjutan. Cek log server.');
                       return _context4.abrupt("return", res.redirect('/admin/pembayaran'));
 
-                    case 53:
+                    case 54:
                     case "end":
                       return _context4.stop();
                   }
                 }
-              }, null, null, [[4, 48], [23, 28], [31, 41]]);
+              }, null, null, [[4, 49], [23, 28], [31, 42]]);
             });
 
           case 10:

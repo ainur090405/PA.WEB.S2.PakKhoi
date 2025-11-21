@@ -262,12 +262,12 @@
   </div>
 </div>
 
-<!-- ========================= -->
-<!-- SCRIPT -->
-<!-- ========================= -->
 <script>
   const modalUlasan = document.getElementById('modalUlasan');
   const modalDetailPembayaran = document.getElementById('modalDetailPembayaran');
+
+  // untuk simpan id interval countdown biar bisa di-clear saat modal ditutup
+  let uploadCountdownInterval = null;
 
   // SETUP ULASAN
   if (modalUlasan) {
@@ -289,11 +289,17 @@
     });
   }
 
-  // SETUP MODAL DETAIL PEMBAYARAN
+  // Saat modal detail pembayaran DIBUKA
   if (modalDetailPembayaran) {
     modalDetailPembayaran.addEventListener('show.bs.modal', e => {
       const id = e.relatedTarget.dataset.id;
       const box = document.getElementById('detailPembayaranContent');
+
+      // kalau ada countdown sebelumnya, clear dulu
+      if (uploadCountdownInterval) {
+        clearInterval(uploadCountdownInterval);
+        uploadCountdownInterval = null;
+      }
 
       box.innerHTML = `
         <div class="text-center">
@@ -335,10 +341,88 @@
             </table>
           `;
 
+          // =========================
+          // REKENING TUJUAN (DUMMY)
+          // =========================
+          html += `
+            <h5 class="mt-4">Rekening Tujuan</h5>
+            <div class="row g-2">
+              <div class="col-md-4">
+                <div class="border rounded p-2 h-100">
+                  <strong>BCA</strong><br>
+                  <small>No. Rek: 1234567890</small><br>
+                  <small>a.n. Ainur Taufik</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="border rounded p-2 h-100">
+                  <strong>BRI</strong><br>
+                  <small>No. Rek: 9876543210</small><br>
+                  <small>a.n. Ainur Taufik</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="border rounded p-2 h-100">
+                  <strong>Mandiri</strong><br>
+                  <small>No. Rek: 1122334455</small><br>
+                  <small>a.n. Ainur Taufik</small>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="border rounded p-2 h-100">
+                  <strong>BNI</strong><br>
+                  <small>No. Rek: 5566778899</small><br>
+                  <small>a.n. Ainur Taufik</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="border rounded p-2 h-100">
+                  <strong>BTN</strong><br>
+                  <small>No. Rek: 3344556677</small><br>
+                  <small>a.n. Ainur Taufik</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="border rounded p-2 h-100">
+                  <strong>Bank Jatim</strong><br>
+                  <small>No. Rek: 7788990011</small><br>
+                  <small>a.n. Ainur Taufik</small>
+                </div>
+              </div>
+            </div>
+          `;
+
           // cari file bukti
           const buktiFile = p.bukti_pembayaran || r.pembayaran_bukti || null;
+          const metodePemb = p.metode_pembayaran || r.pembayaran_metode || 'transaksi';
 
-          if (!buktiFile) {
+          if (!buktiFile && metodePemb === 'transaksi') {
+            // ==== FORM UPLOAD + PREVIEW + COUNTDOWN ====
+            html += `
+              <h5 class="mt-4">Upload Bukti Pembayaran</h5>
+              <form action="/pemain/upload-bukti/${r.id_reservasi}" method="POST" enctype="multipart/form-data" id="formUploadBukti">
+                <input type="file" name="bukti_pembayaran" id="inputBuktiPembayaran" class="form-control mb-3" accept="image/*" required>
+
+                <div class="mb-3 text-center" id="previewWrapper" style="display:none;">
+                  <p class="text-muted mb-2">Preview Bukti:</p>
+                  <img id="imgPreviewBukti" src="" class="img-fluid rounded shadow" style="max-height:300px;">
+                </div>
+
+                <button class="btn btn-primary mb-2">
+                  <i class="bi bi-upload"></i> Upload
+                </button>
+              </form>
+
+              <div class="alert alert-warning py-2" id="uploadCountdownWrapper">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Anda memiliki waktu
+                <strong><span id="uploadCountdownTime">20:00</span></strong>
+                untuk mengupload bukti pembayaran (dihitung sejak pemesanan dibuat).
+              </div>
+            `;
+          } else if (!buktiFile) {
+            // metode bukan transfer, tapi belum ada bukti
             html += `
               <h5 class="mt-4">Upload Bukti Pembayaran</h5>
               <form action="/pemain/upload-bukti/${r.id_reservasi}" method="POST" enctype="multipart/form-data">
@@ -378,13 +462,112 @@
           }
 
           box.innerHTML = html;
+
+          // ====== JS PREVIEW GAMBAR (SETELAH HTML DIMASUKKAN) ======
+          const inputBukti = box.querySelector('#inputBuktiPembayaran');
+          if (inputBukti) {
+            const previewWrapper = box.querySelector('#previewWrapper');
+            const imgPreview = box.querySelector('#imgPreviewBukti');
+
+            inputBukti.addEventListener('change', function (e) {
+              const file = e.target.files[0];
+              if (!file) {
+                previewWrapper.style.display = 'none';
+                imgPreview.src = '';
+                return;
+              }
+
+              const reader = new FileReader();
+              reader.onload = function (ev) {
+                imgPreview.src = ev.target.result;
+                previewWrapper.style.display = 'block';
+              };
+              reader.readAsDataURL(file);
+            });
+          }
+            // ====== COUNTDOWN 20 MENIT ======
+const countdownSpan = box.querySelector('#uploadCountdownTime');
+if (countdownSpan) {
+  const TOTAL_DETIK = 20 * 60;
+  let sisaDetik = TOTAL_DETIK;
+
+  const startRaw = r.tanggal_pesan || null;
+  if (startRaw) {
+    const startTime = new Date(startRaw);
+    const now = new Date();
+    const sudahDetik = Math.floor((now - startTime) / 1000);
+    sisaDetik = TOTAL_DETIK - sudahDetik;
+  }
+  if (sisaDetik < 0) sisaDetik = 0;
+
+  function formatWaktu(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+  }
+
+  countdownSpan.textContent = formatWaktu(sisaDetik);
+
+  uploadCountdownInterval = setInterval(() => {
+    sisaDetik--;
+
+    if (sisaDetik <= 0) {
+      clearInterval(uploadCountdownInterval);
+      uploadCountdownInterval = null;
+      countdownSpan.textContent = "00:00";
+
+      // Disable input
+      const inputFile = box.querySelector('#inputBuktiPembayaran');
+      const submitBtn = box.querySelector('#formUploadBukti button[type="submit"]');
+
+      if (inputFile) inputFile.disabled = true;
+      if (submitBtn) submitBtn.disabled = true;
+
+      // Tambah pesan otomatis di bawah countdown
+      const countdownWrapper = box.querySelector('#uploadCountdownWrapper');
+      if (countdownWrapper) {
+        countdownWrapper.innerHTML = `
+          <i class="bi bi-x-circle text-danger"></i>
+          <strong class="text-danger">Batas waktu upload telah habis.</strong><br>
+          <small class="text-danger">Pembayaran otomatis ditolak.</small>
+        `;
+      }
+
+      // Beri tahu server untuk auto tolak
+      fetch('/pemain/expire-upload/' + r.id_reservasi, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: 'Batas waktu upload bukti pembayaran telah habis'
+        })
+      })
+        .then(res => res.json())
+        .then(j => console.log('Auto reject result:', j))
+        .catch(err => console.error('Auto reject error:', err));
+
+      return;
+    }
+
+    countdownSpan.textContent = formatWaktu(sisaDetik);
+  }, 1000);
+}
         })
         .catch(err => {
           console.error('Detail pembayaran fetch error:', err);
           box.innerHTML = '<div class="alert alert-danger">Terjadi kesalahan saat memuat data.</div>';
         });
     });
+
+    // Saat modal detail pembayaran DITUTUP, matikan interval countdown
+    modalDetailPembayaran.addEventListener('hidden.bs.modal', () => {
+      if (uploadCountdownInterval) {
+        clearInterval(uploadCountdownInterval);
+        uploadCountdownInterval = null;
+      }
+    });
   }
 </script>
+
+
 
 <%- include('../partials/_footer') %>

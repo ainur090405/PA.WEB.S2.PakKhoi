@@ -126,7 +126,7 @@ function () {
               isUpdating = true;
               _context5.prev = 3;
               _context5.next = 6;
-              return regeneratorRuntime.awrap(runQuery("\n        UPDATE reservasi r\n        JOIN jadwal j ON r.id_jadwal = j.id_jadwal\n        SET r.status = 'selesai'\n        WHERE r.status IN ('disetujui','menunggu')\n          AND CONCAT(j.tanggal, ' ', j.jam_selesai) < NOW()\n      "));
+              return regeneratorRuntime.awrap(runQuery("\n        UPDATE reservasi r\n        JOIN jadwal j ON r.id_jadwal = j.id_jadwal\n        SET r.status = 'selesai'\n        WHERE r.status = 'disetujui'\n          AND CONCAT(j.tanggal, ' ', j.jam_selesai) < NOW()\n      "));
 
             case 6:
               _context5.next = 8;

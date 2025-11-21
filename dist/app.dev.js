@@ -47,6 +47,8 @@ var pembayaranRouter = require('./routes/pembayaran');
 
 var notifikasiRouter = require('./routes/notifikasi');
 
+var activityRouter = require('./routes/activity');
+
 var app = express(); // view engine setup
 
 app.set('views', path.join(__dirname, 'views'));
@@ -166,7 +168,8 @@ app.use('/booking', bookingRouter);
 app.use('/foto', fotoRouter);
 app.use('/ulasan', ulasanRouter);
 app.use('/admin/pembayaran', pembayaranRouter);
-app.use('/notifikasi', notifikasiRouter); // catch 404 and forward to error handler
+app.use('/notifikasi', notifikasiRouter);
+app.use('/activity', activityRouter); // catch 404 and forward to error handler
 
 app.use(function (req, res, next) {
   next(createError(404));

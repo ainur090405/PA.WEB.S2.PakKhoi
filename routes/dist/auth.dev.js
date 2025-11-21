@@ -196,6 +196,96 @@ router.get('/logout', function (req, res) {
     res.clearCookie('connect.sid');
     res.redirect('/auth/login');
   });
+}); // Lupa Password - Form Email
+
+router.get('/lupa-password', function (req, res) {
+  res.render('auth/lupa_password', {
+    title: 'Lupa Password'
+  });
+});
+router.post('/lupa-password', function _callee3(req, res) {
+  var email, user;
+  return regeneratorRuntime.async(function _callee3$(_context3) {
+    while (1) {
+      switch (_context3.prev = _context3.next) {
+        case 0:
+          email = req.body.email;
+          _context3.next = 3;
+          return regeneratorRuntime.awrap(Model_Users.getByEmail(email));
+
+        case 3:
+          user = _context3.sent;
+
+          if (!(!user || user.length === 0)) {
+            _context3.next = 7;
+            break;
+          }
+
+          req.flash('error', 'Email tidak ditemukan.');
+          return _context3.abrupt("return", res.redirect('/auth/lupa-password'));
+
+        case 7:
+          res.render('auth/reset_password_simple', {
+            title: 'Reset Password',
+            id_user: user[0].id_user,
+            email: user[0].email
+          });
+
+        case 8:
+        case "end":
+          return _context3.stop();
+      }
+    }
+  });
+});
+router.post('/reset-password-simple', function _callee4(req, res) {
+  var _req$body3, id_user, password, password_confirm, bcrypt, hash;
+
+  return regeneratorRuntime.async(function _callee4$(_context4) {
+    while (1) {
+      switch (_context4.prev = _context4.next) {
+        case 0:
+          _req$body3 = req.body, id_user = _req$body3.id_user, password = _req$body3.password, password_confirm = _req$body3.password_confirm;
+
+          if (!(password !== password_confirm)) {
+            _context4.next = 4;
+            break;
+          }
+
+          req.flash('error', 'Konfirmasi password tidak sama.');
+          return _context4.abrupt("return", res.redirect('back'));
+
+        case 4:
+          if (!(password.length < 6)) {
+            _context4.next = 7;
+            break;
+          }
+
+          req.flash('error', 'Password minimal 6 karakter.');
+          return _context4.abrupt("return", res.redirect('back'));
+
+        case 7:
+          bcrypt = require('bcryptjs');
+          _context4.next = 10;
+          return regeneratorRuntime.awrap(bcrypt.hash(password, 10));
+
+        case 10:
+          hash = _context4.sent;
+          _context4.next = 13;
+          return regeneratorRuntime.awrap(Model_Users.Update(id_user, {
+            password_hash: hash
+          }));
+
+        case 13:
+          req.flash('success', 'Password berhasil diubah. Silakan login kembali.');
+          res.redirect('/auth/login');
+
+        case 15:
+        case "end":
+          return _context4.stop();
+      }
+    }
+  });
 });
 module.exports = router;
 //# sourceMappingURL=auth.dev.js.map

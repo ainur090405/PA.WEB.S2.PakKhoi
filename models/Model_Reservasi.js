@@ -123,11 +123,12 @@ class Model_Reservasi {
 
     try {
       // 1) tandai selesai bila waktu main sudah lewat
+      // 1) tandai selesai bila waktu main sudah lewat
       await runQuery(`
         UPDATE reservasi r
         JOIN jadwal j ON r.id_jadwal = j.id_jadwal
         SET r.status = 'selesai'
-        WHERE r.status IN ('disetujui','menunggu')
+        WHERE r.status = 'disetujui'
           AND CONCAT(j.tanggal, ' ', j.jam_selesai) < NOW()
       `);
 

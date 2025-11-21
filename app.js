@@ -22,6 +22,8 @@ var fotoRouter = require('./routes/foto');
 var ulasanRouter = require('./routes/ulasan');
 var pembayaranRouter = require('./routes/pembayaran');
 var notifikasiRouter = require('./routes/notifikasi');
+const activityRouter = require('./routes/activity');
+
 
 var app = express();
 
@@ -114,6 +116,8 @@ app.use('/foto', fotoRouter);
 app.use('/ulasan', ulasanRouter);
 app.use('/admin/pembayaran', pembayaranRouter);
 app.use('/notifikasi', notifikasiRouter);
+app.use('/activity', activityRouter);
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

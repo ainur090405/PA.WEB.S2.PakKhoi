@@ -50,6 +50,8 @@
             <th>Metode Pembayaran</th>
             <th>Jumlah</th>
             <th>Bukti</th>
+            <!-- ✨ Kolom baru untuk countdown -->
+            <th>Sisa Waktu Upload</th>
             <th>Aksi</th>
           </tr>
         </thead>
@@ -115,6 +117,30 @@
                 <% } %>
               </td>
 
+              <!-- ✨ Kolom Sisa Waktu Upload -->
+              <td>
+                <%
+                  const isTransfer    = r.pembayaran_metode === 'transaksi';
+                  const belumUpload   = !r.pembayaran_bukti;
+                  const masihMenunggu = r.status === 'menunggu';
+                %>
+
+                <% if (isTransfer && belumUpload && masihMenunggu && r.tanggal_pesan) { %>
+                  <small class="text-danger">
+                    Sisa:
+                    <span
+                      class="upload-countdown"
+                      data-start="<%= new Date(r.tanggal_pesan).toISOString() %>">
+                      20:00
+                    </span>
+                  </small>
+                <% } else if (isTransfer && r.pembayaran_bukti) { %>
+                  <small class="text-success">Bukti sudah diupload</small>
+                <% } else { %>
+                  <small class="text-muted">-</small>
+                <% } %>
+              </td>
+
               <td>
                 <a href="/admin/reservasi/edit/<%= r.id_reservasi %>" class="btn btn-sm btn-outline-warning">
                   <i class="bi bi-pencil-fill"></i> Edit Status
@@ -136,8 +162,21 @@
       lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
       order: [[5, 'desc']], // Tanggal Pesan
       columnDefs: [
-        { orderable: false, targets: [9, 10] }, // Bukti & Aksi
-        { type: "num", targets: 8 }            // Jumlah numeric
+        // indeks kolom:
+        // 0: ID
+        // 1: Pemesan
+        // 2: Arena
+        // 3: Tanggal Main
+        // 4: Jam
+        // 5: Tanggal Pesan
+        // 6: Status
+        // 7: Metode Pembayaran
+        // 8: Jumlah
+        // 9: Bukti
+        // 10: Sisa Waktu Upload
+        // 11: Aksi
+        { orderable: false, targets: [9, 10, 11] }, // Bukti, Sisa Waktu, Aksi
+        { type: "num", targets: 8 }                 // Jumlah numeric
       ],
       language: {
         lengthMenu: "Tampilkan _MENU_ data per halaman",
@@ -178,6 +217,48 @@
         table.column(7).search('', false, false).draw();
       }
     });
+
+    // ✨ COUNTDOWN 20 MENIT UNTUK UPLOAD BUKTI (ADMIN VIEW)
+    const TOTAL_UPLOAD_DETIK = 20 * 60;
+
+    function formatWaktu(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+    }
+
+    function updateCountdownAdmin() {
+      const now = new Date();
+
+      document.querySelectorAll('.upload-countdown').forEach(el => {
+        const startRaw = el.dataset.start;
+        if (!startRaw) return;
+
+        const startTime = new Date(startRaw);
+        const sudahDetik = Math.floor((now - startTime) / 1000);
+        let sisaDetik = TOTAL_UPLOAD_DETIK - sudahDetik;
+
+        if (sisaDetik <= 0) {
+          el.textContent = '00:00';
+
+          // optional: tambahkan info habis
+          const parent = el.closest('td');
+          if (parent && !parent.querySelector('.expired-admin')) {
+            const info = document.createElement('div');
+            info.className = 'expired-admin text-danger small';
+            info.textContent = 'Batas waktu habis';
+            parent.appendChild(info);
+          }
+          return;
+        }
+
+        el.textContent = formatWaktu(sisaDetik);
+      });
+    }
+
+    // jalanin langsung + interval tiap detik
+    updateCountdownAdmin();
+    setInterval(updateCountdownAdmin, 1000);
   });
 </script>
 

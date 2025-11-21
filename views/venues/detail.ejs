@@ -1,4 +1,20 @@
 <%- include('../partials/_header', { title: title }) %>
+<%- include('../partials/_messages') %>
+
+<%
+  // KUMPULKAN HARI BUKA DARI DATA JADWAL (opsional, boleh kamu hapus kalau nggak pakai)
+  let hariBukaList = [];
+  if (typeof jadwal !== 'undefined' && jadwal && jadwal.length > 0) {
+    const setHari = new Set();
+    jadwal.forEach(j => {
+      if (j.tanggal) {
+        const h = new Date(j.tanggal).toLocaleDateString('id-ID', { weekday: 'long' });
+        setHari.add(h);
+      }
+    });
+    hariBukaList = Array.from(setHari);
+  }
+%>
 
 <div class="container py-5">
   <!-- Kartu Arena -->
@@ -28,6 +44,14 @@
           <i class="bi bi-clock-fill me-2"></i>
           Jam Buka: <%= arena.jam_buka.substring(0,5) %> - <%= arena.jam_tutup.substring(0,5) %>
         </p>
+
+        <% if (hariBukaList.length > 0) { %>
+          <p class="fs-6 mb-0 text-info">
+            <i class="bi bi-calendar-week me-2"></i>
+            Hari Buka: <%= hariBukaList.join(', ') %>
+          </p>
+        <% } %>
+
         <p class="fs-4 mb-0 text-primary fw-bold">
           <i class="bi bi-cash me-2"></i>
           Harga: Rp <%= arena.harga ? arena.harga.toLocaleString('id-ID') : 'Belum ditentukan' %>
@@ -110,8 +134,6 @@
       <h4 class="mb-0"><i class="bi bi-calendar-check me-2"></i> Pilih Jadwal Tersedia</h4>
     </div>
     <div class="card-body p-4">
-      <%- include('../partials/_messages') %>
-
       <% if (jadwal.length > 0) { %>
         <p class="mb-4">Berikut jadwal yang tersedia untuk dipesan:</p>
 

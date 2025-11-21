@@ -15,7 +15,7 @@ connection.connect((err) => {
     console.error('❌ eror koneksi database', err.message);
     return;
   }
-  console.log('✅ oke nyambung bang ke database arenago');
+  console.log('✅ oke nyambung bang');
 });
 
 module.exports = connection;

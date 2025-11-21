@@ -83,7 +83,7 @@ router.post('/confirm/:id_pembayaran', (req, res) => {
             // 3) update reservasi -> disetujui
             await Model_Reservasi.Update(id_reservasi, { status: 'disetujui' });
 
-            // 🔎 ambil lagi sesudah update (untuk keperluan jadwal & log kalau mau cek)
+            // 🔎 ambil lagi sesudah update
             const rowsReservasi = await Model_Reservasi.getById(id_reservasi);
             const reservasi = rowsReservasi && rowsReservasi[0] ? rowsReservasi[0] : null;
 
@@ -110,7 +110,9 @@ router.post('/confirm/:id_pembayaran', (req, res) => {
                 await Model_Notifikasi.Store({
                   id_user: reservasi.id_user,
                   judul: 'Pembayaran Dikonfirmasi',
-                  isi_pesan: `Pembayaran Anda untuk arena ${reservasi.nama_arena || 'Arena'} telah dikonfirmasi. Booking Anda sekarang aktif.`,
+                  isi_pesan: `Pembayaran Anda untuk arena ${
+                    reservasi.nama_arena || 'Arena'
+                  } telah dikonfirmasi. Booking Anda sekarang aktif.`,
                   jenis_notif: 'status',
                   tipe: 'payment',
                   dibaca: 0
@@ -208,11 +210,20 @@ router.post('/reject/:id_pembayaran', (req, res) => {
             try {
               const rowsReservasi = await Model_Reservasi.getById(id_reservasi);
               const r = rowsReservasi && rowsReservasi[0] ? rowsReservasi[0] : null;
+
               if (r && r.id_user) {
+                // ⬇️ alasan default kalau admin tidak isi catatan
+                const alasan =
+                  catatan_admin && catatan_admin.trim() !== ''
+                    ? catatan_admin
+                    : 'Pembayaran ditolak karena data tidak lengkap atau batas waktu upload bukti pembayaran sudah habis.';
+
                 await Model_Notifikasi.Store({
                   id_user: r.id_user,
                   judul: 'Pembayaran Ditolak',
-                  isi_pesan: `Pembayaran Anda untuk arena ${r.nama_arena || 'Arena'} ditolak. ${catatan_admin || ''}`,
+                  isi_pesan: `Pembayaran Anda untuk arena ${
+                    r.nama_arena || 'Arena'
+                  } ditolak. ${alasan}`,
                   jenis_notif: 'status',
                   tipe: 'payment',
                   dibaca: 0

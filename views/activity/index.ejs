@@ -1,0 +1,91 @@
+<%- include('../partials/_header', { title: title }) %>
+
+<style>
+  .activity-card {
+    transition: 0.3s;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+  .activity-card img {
+    width: 100%;
+    height: auto;
+    max-height: 300px;
+    object-fit: contain;
+    object-position: center;
+    transition: 0.4s;
+    background: #f8f8f8;
+  }
+  .activity-card:hover img {
+    transform: scale(1.05);
+  }
+  .activity-card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  }
+  .icon-circle {
+    width: 45px;
+    height: 45px;
+    background: #28c76f1a;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+  }
+</style>
+
+<div class="container py-4">
+
+  <div class="text-center mb-2">
+    <h2 class="fw-bold text-success">
+      <i class="bi bi-heart-pulse me-2"></i> Aktivitas & Panduan Olahraga
+    </h2>
+    <p class="text-muted mb-1">
+      Pelajari manfaat, prosedur, dan tips aman sebelum bermain.
+    </p>
+    <small class="text-muted">Total aktivitas: <%= activities.length %></small>
+  </div>
+
+  <div class="row g-4">
+    <% activities.forEach(a => { %>
+      <div class="col-md-6 col-lg-6">
+        <div class="card activity-card border-0 shadow-sm h-100">
+
+          <img src="<%= a.gambar %>" alt="<%= a.nama %>">
+
+          <div class="card-body">
+            <div class="d-flex align-items-center mb-2">
+              <div class="icon-circle me-2">
+                <i class="bi <%= a.ikon %> text-success fs-5"></i>
+              </div>
+              <h5 class="mb-0"><%= a.nama %></h5>
+            </div>
+
+            <p class="text-muted"><%= a.deskripsi %></p>
+
+            <h6 class="fw-semibold text-success">Manfaat</h6>
+            <ul>
+              <% a.manfaat.forEach(m => { %>
+                <li><%= m %></li>
+              <% }) %>
+            </ul>
+
+            <h6 class="fw-semibold text-primary">Prosedur</h6>
+            <ol>
+              <% a.prosedur.forEach(p => { %>
+                <li><%= p %></li>
+              <% }) %>
+            </ol>
+
+            <% if (a.catatan) { %>
+              <div class="alert alert-warning py-2">
+                <small><%= a.catatan %></small>
+              </div>
+            <% } %>
+
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+
+</div>
+
+<%- include('../partials/_footer') %>
