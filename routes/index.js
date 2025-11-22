@@ -1,33 +1,61 @@
 var express = require('express');
 var router = express.Router();
-// Kita butuh Model_Arena untuk mengambil data "Arena Populer"
+
+// Koneksi DB
+const connection = require('../config/database');
+// Model Arena
 const Model_Arena = require('../models/Model_Arena');
 
+// helper query pakai Promise
+function runQuery(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    connection.query(sql, params, (err, rows) => {
+      if (err) return reject(err);
+      resolve(rows);
+    });
+  });
+}
+
 /* GET home page (index). */
-router.get('/', async function(req, res, next) {
+router.get('/', async function (req, res, next) {
   try {
-    // 1. Cek dulu jika yang login adalah ADMIN
+    // 1. Kalau ADMIN, langsung lempar ke dashboard admin
     if (req.session.user && req.session.user.role === 'admin') {
-      // Jika Admin, lempar ke Dashboard-nya
       return res.redirect('/admin/dashboard');
     }
 
-    // 2. Jika GUEST atau PEMAIN, tampilkan Halaman Home
-    // Ambil 3 arena dengan foto untuk ditampilkan sebagai "Rekomendasi"
-    const featuredArenas = await Model_Arena.getFeatured();
+    // 2. Kalau GUEST / PEMAIN → tampilkan Home
+
+    // 2a. Ambil arena teratas (pakai rating & total ulasan)
+    //     3 arena teratas untuk rekomendasi di home
+    const featuredArenas = await Model_Arena.getTopWithRating(3);
+
+    // 2b. Ambil statistik real dari database
+    const [rowArena]   = await runQuery('SELECT COUNT(*) AS total FROM arena WHERE status = "aktif"');
+    const [rowUser]    = await runQuery("SELECT COUNT(*) AS total FROM users WHERE role = 'pemain'");
+    const [rowBooking] = await runQuery("SELECT COUNT(*) AS total FROM reservasi WHERE status = 'selesai'");
+    const [rowRating]  = await runQuery('SELECT AVG(rating) AS avg_rating FROM ulasan');
+    const stats = {
+        totalArena:   rowArena   ? (rowArena.total   || 0) : 0,
+        totalUser:    rowUser    ? (rowUser.total    || 0) : 0,
+        totalSelesai: rowBooking ? (rowBooking.total || 0) : 0,   // ⬅️ ganti nama di sini
+        avgRating:    rowRating  && rowRating.avg_rating ? Number(rowRating.avg_rating) : 0
+      };
 
     res.render('index', {
       title: 'Selamat Datang di ArenaGo',
-      arenas: featuredArenas // Kirim data arena ke EJS
+      arenas: featuredArenas,     // untuk "Rekomendasi Arena Teratas"
+      stats,                      // untuk "Kenapa Pilih ArenaGo?"
+      user: req.session.user || null
     });
 
   } catch (err) {
     console.error(err);
-    next(err); // Kirim error ke halaman error EJS
+    next(err); // Kirim error ke handler error EJS
   }
 });
 
-// Halaman Activity
+// Halaman Activity (tetap seperti semula)
 router.get('/activity', (req, res) => {
   const activities = [
     {
@@ -50,7 +78,6 @@ router.get('/activity', (req, res) => {
       ],
       catatan: 'Hindari bermain di lantai yang licin dan gunakan pelindung tulang kering (shin guard).'
     },
-
     {
       slug: 'badminton',
       nama: 'Badminton',
@@ -71,7 +98,6 @@ router.get('/activity', (req, res) => {
       ],
       catatan: 'Perhatikan teknik mendarat saat lompat smash untuk menghindari cedera lutut.'
     },
-
     {
       slug: 'voli',
       nama: 'Bola Voli',
@@ -92,7 +118,6 @@ router.get('/activity', (req, res) => {
       ],
       catatan: 'Jika punya riwayat cedera bahu atau lutut, kurangi intensitas smash dan block.'
     },
-
     {
       slug: 'tenis',
       nama: 'Tenis',
@@ -113,10 +138,6 @@ router.get('/activity', (req, res) => {
       ],
       catatan: 'Pemanasan wajib untuk mencegah cedera bahu, terutama saat servis.'
     },
-
-    // ====================
-    // 5. Basket (Baru)
-    // ====================
     {
       slug: 'basket',
       nama: 'Basket',
@@ -139,10 +160,6 @@ router.get('/activity', (req, res) => {
       ],
       catatan: 'Berhati-hatilah saat melakukan lompatan agar tidak cedera ankle.'
     },
-
-    // ====================
-    // 6. Bisbol (Baru)
-    // ====================
     {
       slug: 'bisbol',
       nama: 'Bisbol',

@@ -17,7 +17,7 @@ var Model_Notifikasi = require('../models/Model_Notifikasi');
 
 var _require = require('../middleware/authMiddleware'),
     isAuthenticated = _require.isAuthenticated,
-    isAdmin = _require.isAdmin; // ⬇️ TAMBAHAN: helper untuk log_reservasi
+    isAdmin = _require.isAdmin; // ⬇️ helper untuk log_reservasi
 
 
 var _require2 = require('../helpers/logHelper'),
@@ -100,7 +100,7 @@ router.post('/confirm/:id_pembayaran', function (req, res) {
             id_reservasi = bayar.id_reservasi; // 2) update tabel pembayaran -> confirmed
 
             connection.query("UPDATE pembayaran\n         SET status_pembayaran = 'confirmed',\n             konfirmasi_admin = 1,\n             catatan_admin = ?,\n             updated_at = NOW()\n         WHERE id_pembayaran = ?", [catatan_admin || null, id_pembayaran], function _callee2(err2) {
-              var rowsReservasiBefore, reservasiBefore, statusAwal, rowsReservasi, reservasi;
+              var rowsReservasiBefore, reservasiBefore, statusAwal, rowsReservasi, reservasi, tanggalMain, jamMulai, jamSelesai, metodePembayaran, isiPesan;
               return regeneratorRuntime.async(function _callee2$(_context2) {
                 while (1) {
                   switch (_context2.prev = _context2.next) {
@@ -165,46 +165,57 @@ router.post('/confirm/:id_pembayaran', function (req, res) {
                       _context2.prev = 27;
 
                       if (!(reservasi && reservasi.id_user)) {
-                        _context2.next = 31;
+                        _context2.next = 36;
                         break;
                       }
 
-                      _context2.next = 31;
+                      // ====== DETAIL RESERVASI UNTUK NOTIF ======
+                      tanggalMain = reservasi.tanggal ? new Date(reservasi.tanggal).toLocaleDateString('id-ID', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      }) : '-';
+                      jamMulai = reservasi.jam_mulai ? reservasi.jam_mulai.substring(0, 5) : '-';
+                      jamSelesai = reservasi.jam_selesai ? reservasi.jam_selesai.substring(0, 5) : '-';
+                      metodePembayaran = bayar.metode_pembayaran || '–';
+                      isiPesan = "Pembayaran Anda untuk arena ".concat(reservasi.nama_arena || 'Arena', " ") + "pada ".concat(tanggalMain, " pukul ").concat(jamMulai, "\u2013").concat(jamSelesai, " ") + "dengan metode ".concat(metodePembayaran, " telah dikonfirmasi. ") + "Booking Anda sekarang aktif.";
+                      _context2.next = 36;
                       return regeneratorRuntime.awrap(Model_Notifikasi.Store({
                         id_user: reservasi.id_user,
                         judul: 'Pembayaran Dikonfirmasi',
-                        isi_pesan: "Pembayaran Anda untuk arena ".concat(reservasi.nama_arena || 'Arena', " telah dikonfirmasi. Booking Anda sekarang aktif."),
+                        isi_pesan: isiPesan,
                         jenis_notif: 'status',
                         tipe: 'payment',
                         dibaca: 0
                       }));
 
-                    case 31:
-                      _context2.next = 36;
+                    case 36:
+                      _context2.next = 41;
                       break;
 
-                    case 33:
-                      _context2.prev = 33;
+                    case 38:
+                      _context2.prev = 38;
                       _context2.t1 = _context2["catch"](27);
                       console.warn('Gagal kirim notif konfirmasi pembayaran:', _context2.t1);
 
-                    case 36:
+                    case 41:
                       req.flash('success_msg', 'Pembayaran berhasil dikonfirmasi.');
                       return _context2.abrupt("return", res.redirect('/admin/pembayaran'));
 
-                    case 40:
-                      _context2.prev = 40;
+                    case 45:
+                      _context2.prev = 45;
                       _context2.t2 = _context2["catch"](4);
                       console.error('ERR AFTER UPDATE pembayaran:', _context2.t2);
                       req.flash('error_msg', 'Pembayaran terupdate, tapi terjadi error lanjutan. Cek log server.');
                       return _context2.abrupt("return", res.redirect('/admin/pembayaran'));
 
-                    case 45:
+                    case 50:
                     case "end":
                       return _context2.stop();
                   }
                 }
-              }, null, null, [[4, 40], [16, 21], [27, 33]]);
+              }, null, null, [[4, 45], [16, 21], [27, 38]]);
             });
 
           case 10:
@@ -254,7 +265,7 @@ router.post('/reject/:id_pembayaran', function (req, res) {
             id_reservasi = bayar.id_reservasi; // 2) update pembayaran -> rejected
 
             connection.query("UPDATE pembayaran\n         SET status_pembayaran = 'rejected',\n             konfirmasi_admin = 1,\n             catatan_admin = ?,\n             updated_at = NOW()\n         WHERE id_pembayaran = ?", [catatan_admin || null, id_pembayaran], function _callee4(err2) {
-              var rowsReservasiBefore, reservasiBefore, statusAwal, rowsReservasi, _rowsReservasi, r, alasan;
+              var rowsReservasiBefore, reservasiBefore, statusAwal, rowsReservasi, _rowsReservasi, r, alasan, tanggalMain, jamMulai, jamSelesai, metodePembayaran, isiPesan;
 
               return regeneratorRuntime.async(function _callee4$(_context4) {
                 while (1) {
@@ -338,48 +349,59 @@ router.post('/reject/:id_pembayaran', function (req, res) {
                       r = _rowsReservasi && _rowsReservasi[0] ? _rowsReservasi[0] : null;
 
                       if (!(r && r.id_user)) {
-                        _context4.next = 40;
+                        _context4.next = 45;
                         break;
                       }
 
-                      // ⬇️ alasan default kalau admin tidak isi catatan
-                      alasan = catatan_admin && catatan_admin.trim() !== '' ? catatan_admin : 'Pembayaran ditolak karena data tidak lengkap atau batas waktu upload bukti pembayaran sudah habis.';
-                      _context4.next = 40;
+                      // alasan default kalau admin tidak isi catatan
+                      alasan = catatan_admin && catatan_admin.trim() !== '' ? catatan_admin : 'Pembayaran ditolak karena data tidak lengkap atau batas waktu upload bukti pembayaran sudah habis.'; // DETAIL RESERVASI
+
+                      tanggalMain = r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                      }) : '-';
+                      jamMulai = r.jam_mulai ? r.jam_mulai.substring(0, 5) : '-';
+                      jamSelesai = r.jam_selesai ? r.jam_selesai.substring(0, 5) : '-';
+                      metodePembayaran = bayar.metode_pembayaran || '–';
+                      isiPesan = "Pembayaran Anda untuk arena ".concat(r.nama_arena || 'Arena', " ") + "pada ".concat(tanggalMain, " pukul ").concat(jamMulai, "\u2013").concat(jamSelesai, " ") + "dengan metode ".concat(metodePembayaran, " ditolak. ") + "Alasan: ".concat(alasan);
+                      _context4.next = 45;
                       return regeneratorRuntime.awrap(Model_Notifikasi.Store({
                         id_user: r.id_user,
                         judul: 'Pembayaran Ditolak',
-                        isi_pesan: "Pembayaran Anda untuk arena ".concat(r.nama_arena || 'Arena', " ditolak. ").concat(alasan),
+                        isi_pesan: isiPesan,
                         jenis_notif: 'status',
                         tipe: 'payment',
                         dibaca: 0
                       }));
 
-                    case 40:
-                      _context4.next = 45;
+                    case 45:
+                      _context4.next = 50;
                       break;
 
-                    case 42:
-                      _context4.prev = 42;
+                    case 47:
+                      _context4.prev = 47;
                       _context4.t1 = _context4["catch"](31);
                       console.warn('Gagal kirim notif tolak pembayaran:', _context4.t1);
 
-                    case 45:
+                    case 50:
                       req.flash('success_msg', 'Pembayaran berhasil ditolak.');
                       return _context4.abrupt("return", res.redirect('/admin/pembayaran'));
 
-                    case 49:
-                      _context4.prev = 49;
+                    case 54:
+                      _context4.prev = 54;
                       _context4.t2 = _context4["catch"](4);
                       console.error('ERR AFTER UPDATE pembayaran (reject):', _context4.t2);
                       req.flash('error_msg', 'Pembayaran terupdate, tapi terjadi error lanjutan. Cek log server.');
                       return _context4.abrupt("return", res.redirect('/admin/pembayaran'));
 
-                    case 54:
+                    case 59:
                     case "end":
                       return _context4.stop();
                   }
                 }
-              }, null, null, [[4, 49], [23, 28], [31, 42]]);
+              }, null, null, [[4, 54], [23, 28], [31, 47]]);
             });
 
           case 10:

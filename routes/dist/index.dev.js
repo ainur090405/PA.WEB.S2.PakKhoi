@@ -1,15 +1,38 @@
 "use strict";
 
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance"); }
+
+function _iterableToArrayLimit(arr, i) { if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) { return; } var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
 var express = require('express');
 
-var router = express.Router(); // Kita butuh Model_Arena untuk mengambil data "Arena Populer"
+var router = express.Router(); // Koneksi DB
 
-var Model_Arena = require('../models/Model_Arena');
+var connection = require('../config/database'); // Model Arena
+
+
+var Model_Arena = require('../models/Model_Arena'); // helper query pakai Promise
+
+
+function runQuery(sql) {
+  var params = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+  return new Promise(function (resolve, reject) {
+    connection.query(sql, params, function (err, rows) {
+      if (err) return reject(err);
+      resolve(rows);
+    });
+  });
+}
 /* GET home page (index). */
 
 
 router.get('/', function _callee(req, res, next) {
-  var featuredArenas;
+  var featuredArenas, _ref, _ref2, rowArena, _ref3, _ref4, rowUser, _ref5, _ref6, rowBooking, _ref7, _ref8, rowRating, stats;
+
   return regeneratorRuntime.async(function _callee$(_context) {
     while (1) {
       switch (_context.prev = _context.next) {
@@ -25,31 +48,69 @@ router.get('/', function _callee(req, res, next) {
 
         case 3:
           _context.next = 5;
-          return regeneratorRuntime.awrap(Model_Arena.getFeatured());
+          return regeneratorRuntime.awrap(Model_Arena.getTopWithRating(3));
 
         case 5:
           featuredArenas = _context.sent;
-          res.render('index', {
-            title: 'Selamat Datang di ArenaGo',
-            arenas: featuredArenas // Kirim data arena ke EJS
+          _context.next = 8;
+          return regeneratorRuntime.awrap(runQuery('SELECT COUNT(*) AS total FROM arena WHERE status = "aktif"'));
 
-          });
+        case 8:
+          _ref = _context.sent;
+          _ref2 = _slicedToArray(_ref, 1);
+          rowArena = _ref2[0];
           _context.next = 13;
-          break;
-
-        case 9:
-          _context.prev = 9;
-          _context.t0 = _context["catch"](0);
-          console.error(_context.t0);
-          next(_context.t0); // Kirim error ke halaman error EJS
+          return regeneratorRuntime.awrap(runQuery("SELECT COUNT(*) AS total FROM users WHERE role = 'pemain'"));
 
         case 13:
+          _ref3 = _context.sent;
+          _ref4 = _slicedToArray(_ref3, 1);
+          rowUser = _ref4[0];
+          _context.next = 18;
+          return regeneratorRuntime.awrap(runQuery("SELECT COUNT(*) AS total FROM reservasi WHERE status = 'selesai'"));
+
+        case 18:
+          _ref5 = _context.sent;
+          _ref6 = _slicedToArray(_ref5, 1);
+          rowBooking = _ref6[0];
+          _context.next = 23;
+          return regeneratorRuntime.awrap(runQuery('SELECT AVG(rating) AS avg_rating FROM ulasan'));
+
+        case 23:
+          _ref7 = _context.sent;
+          _ref8 = _slicedToArray(_ref7, 1);
+          rowRating = _ref8[0];
+          stats = {
+            totalArena: rowArena ? rowArena.total || 0 : 0,
+            totalUser: rowUser ? rowUser.total || 0 : 0,
+            totalSelesai: rowBooking ? rowBooking.total || 0 : 0,
+            // ⬅️ ganti nama di sini
+            avgRating: rowRating && rowRating.avg_rating ? Number(rowRating.avg_rating) : 0
+          };
+          res.render('index', {
+            title: 'Selamat Datang di ArenaGo',
+            arenas: featuredArenas,
+            // untuk "Rekomendasi Arena Teratas"
+            stats: stats,
+            // untuk "Kenapa Pilih ArenaGo?"
+            user: req.session.user || null
+          });
+          _context.next = 34;
+          break;
+
+        case 30:
+          _context.prev = 30;
+          _context.t0 = _context["catch"](0);
+          console.error(_context.t0);
+          next(_context.t0); // Kirim error ke handler error EJS
+
+        case 34:
         case "end":
           return _context.stop();
       }
     }
-  }, null, null, [[0, 9]]);
-}); // Halaman Activity
+  }, null, null, [[0, 30]]);
+}); // Halaman Activity (tetap seperti semula)
 
 router.get('/activity', function (req, res) {
   var activities = [{
@@ -88,10 +149,7 @@ router.get('/activity', function (req, res) {
     manfaat: ['Meningkatkan stamina dan kesehatan jantung.', 'Menguatkan otot lengan, kaki, dan core.', 'Melatih koordinasi tangan-mata.', 'Meningkatkan daya fokus dan refleks cepat.'],
     prosedur: ['Pemanasan sendi bahu, pergelangan, pinggang, dan lutut.', 'Mulai pukulan dasar seperti forehand & backhand.', 'Gunakan sepatu tenis agar tidak selip.', 'Hindari gerakan memutar berlebihan pada pinggang.'],
     catatan: 'Pemanasan wajib untuk mencegah cedera bahu, terutama saat servis.'
-  }, // ====================
-  // 5. Basket (Baru)
-  // ====================
-  {
+  }, {
     slug: 'basket',
     nama: 'Basket',
     ikon: 'bi-basket3-fill',
@@ -100,10 +158,7 @@ router.get('/activity', function (req, res) {
     manfaat: ['Menguatkan otot kaki dan tubuh bagian atas.', 'Melatih keseimbangan dan koordinasi.', 'Meningkatkan stamina dan daya tahan.', 'Melatih kerja sama tim dan komunikasi.', 'Meningkatkan akurasi dan fokus dalam permainan.'],
     prosedur: ['Lakukan pemanasan 5–10 menit (dribble, jogging, stretching).', 'Gunakan sepatu basket dengan ankle support.', 'Latihan dasar: passing, dribble, shooting.', 'Mendarat dengan lutut sedikit menekuk agar aman.', 'Pendinginan minimal 5 menit setelah bermain.'],
     catatan: 'Berhati-hatilah saat melakukan lompatan agar tidak cedera ankle.'
-  }, // ====================
-  // 6. Bisbol (Baru)
-  // ====================
-  {
+  }, {
     slug: 'bisbol',
     nama: 'Bisbol',
     ikon: 'bi-emoji-sunglasses-fill',

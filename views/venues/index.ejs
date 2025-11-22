@@ -59,10 +59,34 @@
             
             <div class="card-body">
               <h5 class="card-title"><%= arena.nama_arena %></h5>
-              <p class="card-text text-muted mb-2 small">
+              
+              <p class="card-text text-muted mb-1 small">
                 <i class="bi bi-geo-alt-fill me-1"></i> 
                 <%= arena.lokasi %>
               </p>
+
+              <!-- RATING RATA-RATA -->
+              <% if (arena.total_review && arena.total_review > 0) { %>
+                <% const rounded = Math.round(arena.avg_rating || 0); %>
+                <div class="d-flex align-items-center mb-2">
+                  <div class="me-2">
+                    <% for (let i = 0; i < rounded; i++) { %>
+                      <i class="bi bi-star-fill text-warning"></i>
+                    <% } %>
+                    <% for (let i = rounded; i < 5; i++) { %>
+                      <i class="bi bi-star text-warning"></i>
+                    <% } %>
+                  </div>
+                  <small class="text-muted">
+                    <%= Number(arena.avg_rating || 0).toFixed(1) %>/5 • <%= arena.total_review %> ulasan
+                  </small>
+                </div>
+              <% } else { %>
+                <small class="text-muted d-block mb-2">
+                  <i class="bi bi-star text-warning me-1"></i> Belum ada ulasan
+                </small>
+              <% } %>
+
               <span class="badge bg-primary mb-3">
                 <%= arena.jenis_olahraga %>
               </span>
@@ -85,4 +109,7 @@
       </div>
     <% } %>
 
-  </div> </div> <%- include('../partials/_footer') %>
+  </div>
+</div>
+
+<%- include('../partials/_footer') %>

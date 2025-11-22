@@ -56,8 +56,9 @@
           <i class="bi bi-cash me-2"></i>
           Harga: Rp <%= arena.harga ? arena.harga.toLocaleString('id-ID') : 'Belum ditentukan' %>
         </p>
+
         <% if (avgRating && totalReviews > 0) { %>
-          <div class="d-flex align-items-center">
+          <div class="d-flex align-items-center mt-1">
             <div class="me-2">
               <% for(let i = 0; i < Math.floor(avgRating); i++) { %>
                 <i class="bi bi-star-fill text-warning"></i>
@@ -66,6 +67,7 @@
                 <i class="bi bi-star text-warning"></i>
               <% } %>
             </div>
+            <span class="fw-semibold me-1"><%= Number(avgRating).toFixed(1) %>/5</span>
             <span class="text-muted small">(<%= totalReviews %> ulasan)</span>
           </div>
         <% } %>
@@ -95,11 +97,14 @@
   <% if (reviews && reviews.length > 0) { %>
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-header bg-light">
-      <h5 class="mb-0"><i class="bi bi-star-fill text-warning me-2"></i>Ulasan Pengguna (<%= reviews.length %>)</h5>
+      <h5 class="mb-0">
+        <i class="bi bi-star-fill text-warning me-2"></i>
+        Ulasan Pengguna (<%= reviews.length %>)
+      </h5>
     </div>
     <div class="card-body">
-      <% reviews.slice(0, 3).forEach(review => { %>
-        <div class="mb-3 pb-3 border-bottom">
+      <% reviews.forEach((review, idx) => { %>
+        <div class="mb-3 pb-3 border-bottom review-item <%= idx >= 2 ? 'd-none extra-review' : '' %>">
           <div class="d-flex justify-content-between align-items-start">
             <div>
               <strong><%= review.nama_user %></strong>
@@ -119,10 +124,19 @@
           <% } %>
         </div>
       <% }) %>
-      <% if (reviews.length > 3) { %>
-        <p class="text-center mb-0">
-          <small class="text-muted">Dan <%= reviews.length - 3 %> ulasan lainnya...</small>
-        </p>
+
+      <% if (reviews.length > 2) { %>
+        <div class="text-center">
+          <button
+            type="button"
+            class="btn btn-link btn-sm"
+            id="btnToggleReviews"
+            data-count="<%= reviews.length - 2 %>"
+            onclick="toggleReviews()"
+          >
+            Lihat <%= reviews.length - 2 %> ulasan lainnya
+          </button>
+        </div>
       <% } %>
     </div>
   </div>
@@ -270,6 +284,29 @@
 <%- include('../partials/_footer') %>
 
 <script>
+  // Toggle ulasan tambahan (lebih dari 2)
+  function toggleReviews() {
+    const extras = document.querySelectorAll('.extra-review');
+    const btn = document.getElementById('btnToggleReviews');
+    if (!extras.length || !btn) return;
+
+    const hidden = extras[0].classList.contains('d-none');
+
+    extras.forEach(item => {
+      if (hidden) {
+        item.classList.remove('d-none');
+      } else {
+        item.classList.add('d-none');
+      }
+    });
+
+    const count = btn.dataset.count || extras.length;
+
+    btn.textContent = hidden
+      ? 'Sembunyikan ulasan tambahan'
+      : 'Lihat ' + count + ' ulasan lainnya';
+  }
+
   const bookingModal = document.getElementById('bookingModal');
   const pmSelect = document.getElementById('payment_method');
   const amountInput = document.getElementById('amount');

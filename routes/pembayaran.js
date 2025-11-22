@@ -9,7 +9,7 @@ const Model_Jadwal     = require('../models/Model_Jadwal');
 const Model_Notifikasi = require('../models/Model_Notifikasi');
 const { isAuthenticated, isAdmin } = require('../middleware/authMiddleware');
 
-// ⬇️ TAMBAHAN: helper untuk log_reservasi
+// ⬇️ helper untuk log_reservasi
 const { createLog } = require('../helpers/logHelper');
 
 // semua route di sini hanya boleh diakses admin
@@ -107,12 +107,32 @@ router.post('/confirm/:id_pembayaran', (req, res) => {
             // 5) kirim notifikasi ke pemain (kalau ada)
             try {
               if (reservasi && reservasi.id_user) {
+                // ====== DETAIL RESERVASI UNTUK NOTIF ======
+                const tanggalMain = reservasi.tanggal
+                  ? new Date(reservasi.tanggal).toLocaleDateString('id-ID', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })
+                  : '-';
+
+                const jamMulai   = reservasi.jam_mulai   ? reservasi.jam_mulai.substring(0, 5)   : '-';
+                const jamSelesai = reservasi.jam_selesai ? reservasi.jam_selesai.substring(0, 5) : '-';
+
+                const metodePembayaran = bayar.metode_pembayaran || '–';
+
+                const isiPesan = (
+                  `Pembayaran Anda untuk arena ${reservasi.nama_arena || 'Arena'} ` +
+                  `pada ${tanggalMain} pukul ${jamMulai}–${jamSelesai} ` +
+                  `dengan metode ${metodePembayaran} telah dikonfirmasi. ` +
+                  `Booking Anda sekarang aktif.`
+                );
+
                 await Model_Notifikasi.Store({
                   id_user: reservasi.id_user,
                   judul: 'Pembayaran Dikonfirmasi',
-                  isi_pesan: `Pembayaran Anda untuk arena ${
-                    reservasi.nama_arena || 'Arena'
-                  } telah dikonfirmasi. Booking Anda sekarang aktif.`,
+                  isi_pesan: isiPesan,
                   jenis_notif: 'status',
                   tipe: 'payment',
                   dibaca: 0
@@ -212,18 +232,38 @@ router.post('/reject/:id_pembayaran', (req, res) => {
               const r = rowsReservasi && rowsReservasi[0] ? rowsReservasi[0] : null;
 
               if (r && r.id_user) {
-                // ⬇️ alasan default kalau admin tidak isi catatan
+                // alasan default kalau admin tidak isi catatan
                 const alasan =
                   catatan_admin && catatan_admin.trim() !== ''
                     ? catatan_admin
                     : 'Pembayaran ditolak karena data tidak lengkap atau batas waktu upload bukti pembayaran sudah habis.';
 
+                // DETAIL RESERVASI
+                const tanggalMain = r.tanggal
+                  ? new Date(r.tanggal).toLocaleDateString('id-ID', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })
+                  : '-';
+
+                const jamMulai   = r.jam_mulai   ? r.jam_mulai.substring(0, 5)   : '-';
+                const jamSelesai = r.jam_selesai ? r.jam_selesai.substring(0, 5) : '-';
+
+                const metodePembayaran = bayar.metode_pembayaran || '–';
+
+                const isiPesan = (
+                  `Pembayaran Anda untuk arena ${r.nama_arena || 'Arena'} ` +
+                  `pada ${tanggalMain} pukul ${jamMulai}–${jamSelesai} ` +
+                  `dengan metode ${metodePembayaran} ditolak. ` +
+                  `Alasan: ${alasan}`
+                );
+
                 await Model_Notifikasi.Store({
                   id_user: r.id_user,
                   judul: 'Pembayaran Ditolak',
-                  isi_pesan: `Pembayaran Anda untuk arena ${
-                    r.nama_arena || 'Arena'
-                  } ditolak. ${alasan}`,
+                  isi_pesan: isiPesan,
                   jenis_notif: 'status',
                   tipe: 'payment',
                   dibaca: 0

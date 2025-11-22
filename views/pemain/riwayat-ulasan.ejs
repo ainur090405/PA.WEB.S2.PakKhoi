@@ -1,6 +1,10 @@
 <%- include('../partials/_header', { title: title }) %>
 <%- include('../partials/_messages') %>
 
+<!-- DataTables CSS (Bootstrap 5) -->
+<link rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
+
 <style>
   .table thead { background: #28c76f; color: #fff; }
   .table th { font-weight: 600; text-transform: uppercase; font-size: 0.9rem; }
@@ -25,6 +29,13 @@
   }
   .payment-cell .meta { display:inline-flex; align-items:center; gap:0.35rem; font-size:0.92rem; }
   .payment-cell .btn-detail { margin-left: 0.25rem; }
+
+  /* Sedikit rapihin input search DataTables */
+  div.dataTables_wrapper div.dataTables_filter input {
+    margin-left: 0.5rem;
+    border-radius: 999px;
+    padding: 0.15rem 0.75rem;
+  }
 </style>
 
 <div class="container py-4">
@@ -38,7 +49,7 @@
     </div>
     <div class="card-body">
       <div class="table-responsive">
-        <table class="table table-hover align-middle">
+        <table class="table table-hover align-middle" id="riwayatTable">
           <thead>
             <tr>
               <th>Arena</th>
@@ -165,10 +176,10 @@
       <i class="bi bi-star-fill me-2 text-warning"></i> Riwayat Ulasan Saya (<%= ulasan.length %>)
     </div>
 
-    <div class="card-body">
+    <div class="card-body" id="ulasanContainer">
       <% if (ulasan.length > 0) { %>
         <% ulasan.forEach(u => { %>
-          <div class="mb-3 border-bottom pb-2">
+          <div class="mb-3 border-bottom pb-2 ulasan-item">
             <strong><%= u.nama_arena %></strong>
             <div>
               <% for(let i = 0; i < u.rating; i++) { %>
@@ -181,6 +192,16 @@
             <p class="mb-0 fst-italic text-muted">"<%= u.komentar %>"</p>
           </div>
         <% }) %>
+
+        <!-- Pagination Ulasan -->
+        <div id="ulasanPagination"
+             class="d-flex justify-content-between align-items-center mt-3"
+             style="display:none;">
+          <button class="btn btn-sm btn-outline-secondary" id="prevUlasan">Sebelumnya</button>
+          <span class="small text-muted" id="infoUlasan"></span>
+          <button class="btn btn-sm btn-outline-secondary" id="nextUlasan">Selanjutnya</button>
+        </div>
+
       <% } else { %>
         <p class="text-center text-muted mb-0">Belum ada ulasan.</p>
       <% } %>
@@ -262,6 +283,11 @@
   </div>
 </div>
 
+<!-- jQuery & DataTables JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
 <script>
   const modalUlasan = document.getElementById('modalUlasan');
   const modalDetailPembayaran = document.getElementById('modalDetailPembayaran');
@@ -269,7 +295,7 @@
   // untuk simpan id interval countdown biar bisa di-clear saat modal ditutup
   let uploadCountdownInterval = null;
 
-  // SETUP ULASAN
+  // SETUP ULASAN (modal beri/edit ulasan)
   if (modalUlasan) {
     modalUlasan.addEventListener('show.bs.modal', e => {
       const btn = e.relatedTarget;
@@ -485,72 +511,73 @@
               reader.readAsDataURL(file);
             });
           }
-            // ====== COUNTDOWN 20 MENIT ======
-const countdownSpan = box.querySelector('#uploadCountdownTime');
-if (countdownSpan) {
-  const TOTAL_DETIK = 20 * 60;
-  let sisaDetik = TOTAL_DETIK;
 
-  const startRaw = r.tanggal_pesan || null;
-  if (startRaw) {
-    const startTime = new Date(startRaw);
-    const now = new Date();
-    const sudahDetik = Math.floor((now - startTime) / 1000);
-    sisaDetik = TOTAL_DETIK - sudahDetik;
-  }
-  if (sisaDetik < 0) sisaDetik = 0;
+          // ====== COUNTDOWN 20 MENIT ======
+          const countdownSpan = box.querySelector('#uploadCountdownTime');
+          if (countdownSpan) {
+            const TOTAL_DETIK = 20 * 60;
+            let sisaDetik = TOTAL_DETIK;
 
-  function formatWaktu(sec) {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
-  }
+            const startRaw = r.tanggal_pesan || null;
+            if (startRaw) {
+              const startTime = new Date(startRaw);
+              const now = new Date();
+              const sudahDetik = Math.floor((now - startTime) / 1000);
+              sisaDetik = TOTAL_DETIK - sudahDetik;
+            }
+            if (sisaDetik < 0) sisaDetik = 0;
 
-  countdownSpan.textContent = formatWaktu(sisaDetik);
+            function formatWaktu(sec) {
+              const m = Math.floor(sec / 60);
+              const s = sec % 60;
+              return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+            }
 
-  uploadCountdownInterval = setInterval(() => {
-    sisaDetik--;
+            countdownSpan.textContent = formatWaktu(sisaDetik);
 
-    if (sisaDetik <= 0) {
-      clearInterval(uploadCountdownInterval);
-      uploadCountdownInterval = null;
-      countdownSpan.textContent = "00:00";
+            uploadCountdownInterval = setInterval(() => {
+              sisaDetik--;
 
-      // Disable input
-      const inputFile = box.querySelector('#inputBuktiPembayaran');
-      const submitBtn = box.querySelector('#formUploadBukti button[type="submit"]');
+              if (sisaDetik <= 0) {
+                clearInterval(uploadCountdownInterval);
+                uploadCountdownInterval = null;
+                countdownSpan.textContent = "00:00";
 
-      if (inputFile) inputFile.disabled = true;
-      if (submitBtn) submitBtn.disabled = true;
+                // Disable input
+                const inputFile = box.querySelector('#inputBuktiPembayaran');
+                const submitBtn = box.querySelector('#formUploadBukti button[type="submit"]');
 
-      // Tambah pesan otomatis di bawah countdown
-      const countdownWrapper = box.querySelector('#uploadCountdownWrapper');
-      if (countdownWrapper) {
-        countdownWrapper.innerHTML = `
-          <i class="bi bi-x-circle text-danger"></i>
-          <strong class="text-danger">Batas waktu upload telah habis.</strong><br>
-          <small class="text-danger">Pembayaran otomatis ditolak.</small>
-        `;
-      }
+                if (inputFile) inputFile.disabled = true;
+                if (submitBtn) submitBtn.disabled = true;
 
-      // Beri tahu server untuk auto tolak
-      fetch('/pemain/expire-upload/' + r.id_reservasi, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reason: 'Batas waktu upload bukti pembayaran telah habis'
-        })
-      })
-        .then(res => res.json())
-        .then(j => console.log('Auto reject result:', j))
-        .catch(err => console.error('Auto reject error:', err));
+                // Tambah pesan otomatis di bawah countdown
+                const countdownWrapper = box.querySelector('#uploadCountdownWrapper');
+                if (countdownWrapper) {
+                  countdownWrapper.innerHTML = `
+                    <i class="bi bi-x-circle text-danger"></i>
+                    <strong class="text-danger">Batas waktu upload telah habis.</strong><br>
+                    <small class="text-danger">Pembayaran otomatis ditolak.</small>
+                  `;
+                }
 
-      return;
-    }
+                // Beri tahu server untuk auto tolak
+                fetch('/pemain/expire-upload/' + r.id_reservasi, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    reason: 'Batas waktu upload bukti pembayaran telah habis'
+                  })
+                })
+                  .then(res => res.json())
+                  .then(j => console.log('Auto reject result:', j))
+                  .catch(err => console.error('Auto reject error:', err));
 
-    countdownSpan.textContent = formatWaktu(sisaDetik);
-  }, 1000);
-}
+                return;
+              }
+
+              countdownSpan.textContent = formatWaktu(sisaDetik);
+            }, 1000);
+          }
         })
         .catch(err => {
           console.error('Detail pembayaran fetch error:', err);
@@ -566,8 +593,81 @@ if (countdownSpan) {
       }
     });
   }
+
+  // ============================
+  // INIT DATATABLE RIWAYAT PEMESANAN
+  // ============================
+  $(document).ready(function () {
+    $('#riwayatTable').DataTable({
+      pageLength: 10,
+      lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Semua"]],
+      order: [[1, 'desc']], // urutkan dari tanggal main terbaru
+      columnDefs: [
+        { orderable: false, targets: [4, 6] } // kolom Pembayaran & Ulasan tidak di-sort
+      ],
+      language: {
+        lengthMenu: "Tampilkan _MENU_ data per halaman",
+        zeroRecords: "Tidak ada data yang cocok",
+        info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+        infoEmpty: "Tidak ada data tersedia",
+        infoFiltered: "(difilter dari _MAX_ total data)",
+        search: "Cari:",
+        paginate: {
+          first: "Pertama",
+          last: "Terakhir",
+          next: "Selanjutnya",
+          previous: "Sebelumnya"
+        }
+      }
+    });
+
+    // ============================
+    // PAGINATION ULASAN (CLIENT SIDE)
+    // ============================
+    const ulasanItems = document.querySelectorAll('.ulasan-item');
+    const paginationWrapper = document.getElementById('ulasanPagination');
+    const prevBtn = document.getElementById('prevUlasan');
+    const nextBtn = document.getElementById('nextUlasan');
+    const infoSpan = document.getElementById('infoUlasan');
+    const PER_PAGE = 5;
+
+    if (ulasanItems.length > PER_PAGE && paginationWrapper && prevBtn && nextBtn && infoSpan) {
+      let currentPage = 1;
+      const totalItems = ulasanItems.length;
+      const totalPages = Math.ceil(totalItems / PER_PAGE);
+
+      function showPage(page) {
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
+        currentPage = page;
+
+        ulasanItems.forEach((el, idx) => {
+          const start = (currentPage - 1) * PER_PAGE;
+          const end = start + PER_PAGE;
+          if (idx >= start && idx < end) {
+            el.style.display = '';
+          } else {
+            el.style.display = 'none';
+          }
+        });
+
+        infoSpan.textContent = `Halaman ${currentPage} dari ${totalPages}`;
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage === totalPages;
+      }
+
+      prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) showPage(currentPage - 1);
+      });
+
+      nextBtn.addEventListener('click', () => {
+        if (currentPage < totalPages) showPage(currentPage + 1);
+      });
+
+      paginationWrapper.style.display = 'flex';
+      showPage(1);
+    }
+  });
 </script>
-
-
 
 <%- include('../partials/_footer') %>

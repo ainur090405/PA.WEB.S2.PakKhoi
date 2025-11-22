@@ -99,7 +99,7 @@
         <% if (user) { %>
           <% if (user.role === 'pemain') { %>
             <!-- Notifikasi untuk Pemain -->
-            <li class="nav-item dropdown">
+            <li class="nav-item dropdown" data-bs-auto-close="outside">
               <a class="nav-link position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-bell-fill"></i>
                 <% if (unreadCount > 0) { %>
@@ -115,15 +115,17 @@
                 <li><h6 class="dropdown-header">Notifikasi</h6></li>
 
                 <% if (notifications && notifications.length > 0) { %>
-                  <% notifications.slice(0, 10).forEach(notif => { %>
-                    <li>
+                  <% notifications.forEach((notif, idx) => { %>
+                    <li class="<%= idx >= 5 ? 'notif-item-extra d-none' : '' %>">
                       <a
                         class="dropdown-item <%= notif.dibaca ? '' : 'fw-bold' %>"
                         href="#"
                         data-id="<%= notif.id_notifikasi %>"
                         data-judul="<%- (notif.judul || '').replace(/"/g, '&quot;') %>"
                         data-pesan="<%- (notif.isi_pesan || '').replace(/"/g, '&quot;') %>"
-                        data-tanggal="<%= notif.tanggal_kirim ? new Date(notif.tanggal_kirim).toLocaleDateString('id-ID') : '' %>"
+                        data-tanggal="<%= notif.tanggal_notifikasi || notif.waktu_kirim
+                          ? new Date(notif.tanggal_notifikasi || notif.waktu_kirim).toLocaleString('id-ID')
+                          : '' %>"
                         onclick="openNotificationFromDropdown(this); return false;"
                       >
                         <div class="d-flex">
@@ -131,7 +133,9 @@
                             <div class="fw-semibold notif-item-title"><%= notif.judul %></div>
                             <small class="text-muted notif-item-text"><%= notif.isi_pesan %></small>
                             <div class="small text-muted mt-1">
-                              <%= notif.tanggal_kirim ? new Date(notif.tanggal_kirim).toLocaleDateString('id-ID') : '' %>
+                              <%= notif.tanggal_notifikasi || notif.waktu_kirim
+                                ? new Date(notif.tanggal_notifikasi || notif.waktu_kirim).toLocaleString('id-ID')
+                                : '' %>
                             </div>
                           </div>
                           <% if (!notif.dibaca) { %>
@@ -143,8 +147,16 @@
                       </a>
                     </li>
                   <% }) %>
-                  <li><hr class="dropdown-divider"></li>
-                  <li><a class="dropdown-item text-center" href="/pemain/riwayat-ulasan">Lihat Semua</a></li>
+
+                  <% if (notifications.length > 5) { %>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                      <a class="dropdown-item text-center" href="#" id="btnShowAllNotif" onclick="toggleAllNotif(event)">
+                        Lihat Semua
+                      </a>
+                    </li>
+                  <% } %>
+
                 <% } else { %>
                   <li><a class="dropdown-item text-center text-muted" href="#">Belum ada notifikasi</a></li>
                 <% } %>
@@ -235,6 +247,28 @@
     } else {
       console.warn('showNotificationModal() belum didefinisikan.');
     }
+  }
+
+  // Toggle "Lihat Semua" di dropdown notifikasi
+  function toggleAllNotif(e) {
+    e.preventDefault();
+    e.stopPropagation(); // jangan sampai nutup dropdown
+
+    const extras = document.querySelectorAll('.notif-item-extra');
+    const btn = document.getElementById('btnShowAllNotif');
+    if (!extras.length || !btn) return;
+
+    const hidden = extras[0].classList.contains('d-none');
+
+    extras.forEach(li => {
+      if (hidden) {
+        li.classList.remove('d-none');
+      } else {
+        li.classList.add('d-none');
+      }
+    });
+
+    btn.textContent = hidden ? 'Tutup' : 'Lihat Semua';
   }
 </script>
 

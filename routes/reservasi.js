@@ -122,26 +122,62 @@ router.post('/update-status/:id', async (req, res) => {
       console.warn('Gagal mencatat log reservasi (update-status):', logErr);
     }
 
-    // Kirim notifikasi ke user (opsional)
+    // ⬇️ KIRIM NOTIFIKASI KE USER (DIPERKAYA DENGAN TANGGAL/JAM/METODE)
     try {
       const rows = await Model_Reservasi.getById(id_reservasi);
       if (rows && rows[0] && rows[0].id_user) {
         const r = rows[0];
+
+        const tanggalMain = r.tanggal
+          ? new Date(r.tanggal).toLocaleDateString('id-ID', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric'
+            })
+          : '-';
+
+        const jamMulai   = r.jam_mulai   ? r.jam_mulai.substring(0, 5)   : '-';
+        const jamSelesai = r.jam_selesai ? r.jam_selesai.substring(0, 5) : '-';
+
+        let metodeText = '';
+        if (r.pembayaran_metode === 'cod') {
+          metodeText = ' dengan metode COD (bayar di tempat)';
+        } else if (r.pembayaran_metode === 'transaksi') {
+          metodeText = ' dengan metode Transfer Bank';
+        } else {
+          metodeText = '';
+        }
+
+        let isi_pesan;
+        if (status === 'disetujui') {
+          isi_pesan =
+            `Booking Anda untuk arena ${r.nama_arena} pada ${tanggalMain} ` +
+            `pukul ${jamMulai}–${jamSelesai}${metodeText} telah disetujui.`;
+        } else if (status === 'ditolak') {
+          isi_pesan =
+            `Maaf, booking Anda untuk arena ${r.nama_arena} pada ${tanggalMain} ` +
+            `pukul ${jamMulai}–${jamSelesai}${metodeText} ditolak. ` +
+            `Silakan hubungi admin untuk informasi lebih lanjut.`;
+        } else if (status === 'selesai') {
+          isi_pesan =
+            `Terima kasih telah bermain di ${r.nama_arena} pada ${tanggalMain} ` +
+            `pukul ${jamMulai}–${jamSelesai}.`;
+        } else {
+          isi_pesan =
+            `Status booking Anda untuk arena ${r.nama_arena} pada ${tanggalMain} ` +
+            `pukul ${jamMulai}–${jamSelesai}${metodeText} telah berubah menjadi ${status}.`;
+        }
+
         const notif = {
           id_user: r.id_user,
           judul: `Status Booking: ${status.toUpperCase()}`,
-          isi_pesan:
-            status === 'disetujui'
-              ? `Booking Anda untuk arena ${r.nama_arena} telah disetujui.`
-              : status === 'ditolak'
-              ? `Maaf, booking Anda untuk arena ${r.nama_arena} ditolak.`
-              : status === 'selesai'
-              ? `Terima kasih telah bermain di ${r.nama_arena}.`
-              : `Status booking Anda telah berubah menjadi ${status}.`,
+          isi_pesan,
           jenis_notif: 'status',
           tipe: 'booking',
           dibaca: 0
         };
+
         if (typeof Model_Notifikasi.Store === 'function') {
           await Model_Notifikasi.Store(notif);
         }
@@ -205,23 +241,56 @@ router.post('/update/:id', async (req, res) => {
       console.warn('Gagal mencatat log reservasi (update form):', logErr);
     }
 
-    // Notifikasi opsional (LOGIKA LAMA)
+    // ⬇️ NOTIFIKASI DIPERKAYA (UNTUK COD JUGA)
     if (r.id_user) {
+      const tanggalMain = r.tanggal
+        ? new Date(r.tanggal).toLocaleDateString('id-ID', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          })
+        : '-';
+
+      const jamMulai   = r.jam_mulai   ? r.jam_mulai.substring(0, 5)   : '-';
+      const jamSelesai = r.jam_selesai ? r.jam_selesai.substring(0, 5) : '-';
+
+      let metodeText = '';
+      if (r.pembayaran_metode === 'cod') {
+        metodeText = ' dengan metode COD (bayar di tempat)';
+      } else if (r.pembayaran_metode === 'transaksi') {
+        metodeText = ' dengan metode Transfer Bank';
+      }
+
+      let isi_pesan;
+      if (status === 'disetujui') {
+        isi_pesan =
+          `Booking Anda untuk arena ${r.nama_arena} pada ${tanggalMain} ` +
+          `pukul ${jamMulai}–${jamSelesai}${metodeText} telah disetujui.`;
+      } else if (status === 'ditolak') {
+        isi_pesan =
+          `Maaf, booking Anda untuk arena ${r.nama_arena} pada ${tanggalMain} ` +
+          `pukul ${jamMulai}–${jamSelesai}${metodeText} ditolak.` +
+          (catatan ? ` Alasan: ${catatan}` : '');
+      } else if (status === 'selesai') {
+        isi_pesan =
+          `Terima kasih telah bermain di ${r.nama_arena} pada ${tanggalMain} ` +
+          `pukul ${jamMulai}–${jamSelesai}.`;
+      } else {
+        isi_pesan =
+          `Status booking Anda untuk arena ${r.nama_arena} pada ${tanggalMain} ` +
+          `pukul ${jamMulai}–${jamSelesai}${metodeText} telah berubah menjadi ${status}.`;
+      }
+
       const notif = {
         id_user: r.id_user,
         judul: `Status Booking: ${status.toUpperCase()}`,
-        isi_pesan:
-          status === 'disetujui'
-            ? `Booking Anda untuk arena ${r.nama_arena} telah disetujui.`
-            : status === 'ditolak'
-            ? `Maaf, booking Anda untuk arena ${r.nama_arena} ditolak.`
-            : status === 'selesai'
-            ? `Terima kasih telah bermain di ${r.nama_arena}.`
-            : `Status booking Anda telah berubah menjadi ${status}.`,
+        isi_pesan,
         jenis_notif: 'status',
         tipe: 'booking',
         dibaca: 0
       };
+
       if (typeof Model_Notifikasi.Store === 'function') {
         await Model_Notifikasi.Store(notif);
       }

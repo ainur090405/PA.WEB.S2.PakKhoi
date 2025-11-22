@@ -124,7 +124,7 @@ router.get('/edit/:id', function _callee2(req, res) {
 // ============================
 
 router.post('/update-status/:id', function _callee3(req, res) {
-  var id_reservasi, status, rowsBefore, reservasiBefore, status_awal, r, rows, id_jadwal, _rows, _r, notif;
+  var id_reservasi, status, rowsBefore, reservasiBefore, status_awal, r, rows, id_jadwal, _rows, _r, tanggalMain, jamMulai, jamSelesai, metodeText, isi_pesan, notif;
 
   return regeneratorRuntime.async(function _callee3$(_context3) {
     while (1) {
@@ -286,60 +286,88 @@ router.post('/update-status/:id', function _callee3(req, res) {
           _rows = _context3.sent;
 
           if (!(_rows && _rows[0] && _rows[0].id_user)) {
-            _context3.next = 66;
+            _context3.next = 72;
             break;
           }
 
           _r = _rows[0];
+          tanggalMain = _r.tanggal ? new Date(_r.tanggal).toLocaleDateString('id-ID', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }) : '-';
+          jamMulai = _r.jam_mulai ? _r.jam_mulai.substring(0, 5) : '-';
+          jamSelesai = _r.jam_selesai ? _r.jam_selesai.substring(0, 5) : '-';
+          metodeText = '';
+
+          if (_r.pembayaran_metode === 'cod') {
+            metodeText = ' dengan metode COD (bayar di tempat)';
+          } else if (_r.pembayaran_metode === 'transaksi') {
+            metodeText = ' dengan metode Transfer Bank';
+          } else {
+            metodeText = '';
+          }
+
+          if (status === 'disetujui') {
+            isi_pesan = "Booking Anda untuk arena ".concat(_r.nama_arena, " pada ").concat(tanggalMain, " ") + "pukul ".concat(jamMulai, "\u2013").concat(jamSelesai).concat(metodeText, " telah disetujui.");
+          } else if (status === 'ditolak') {
+            isi_pesan = "Maaf, booking Anda untuk arena ".concat(_r.nama_arena, " pada ").concat(tanggalMain, " ") + "pukul ".concat(jamMulai, "\u2013").concat(jamSelesai).concat(metodeText, " ditolak. ") + "Silakan hubungi admin untuk informasi lebih lanjut.";
+          } else if (status === 'selesai') {
+            isi_pesan = "Terima kasih telah bermain di ".concat(_r.nama_arena, " pada ").concat(tanggalMain, " ") + "pukul ".concat(jamMulai, "\u2013").concat(jamSelesai, ".");
+          } else {
+            isi_pesan = "Status booking Anda untuk arena ".concat(_r.nama_arena, " pada ").concat(tanggalMain, " ") + "pukul ".concat(jamMulai, "\u2013").concat(jamSelesai).concat(metodeText, " telah berubah menjadi ").concat(status, ".");
+          }
+
           notif = {
             id_user: _r.id_user,
             judul: "Status Booking: ".concat(status.toUpperCase()),
-            isi_pesan: status === 'disetujui' ? "Booking Anda untuk arena ".concat(_r.nama_arena, " telah disetujui.") : status === 'ditolak' ? "Maaf, booking Anda untuk arena ".concat(_r.nama_arena, " ditolak.") : status === 'selesai' ? "Terima kasih telah bermain di ".concat(_r.nama_arena, ".") : "Status booking Anda telah berubah menjadi ".concat(status, "."),
+            isi_pesan: isi_pesan,
             jenis_notif: 'status',
             tipe: 'booking',
             dibaca: 0
           };
 
           if (!(typeof Model_Notifikasi.Store === 'function')) {
-            _context3.next = 66;
+            _context3.next = 72;
             break;
           }
 
-          _context3.next = 66;
+          _context3.next = 72;
           return regeneratorRuntime.awrap(Model_Notifikasi.Store(notif));
 
-        case 66:
-          _context3.next = 71;
+        case 72:
+          _context3.next = 77;
           break;
 
-        case 68:
-          _context3.prev = 68;
+        case 74:
+          _context3.prev = 74;
           _context3.t1 = _context3["catch"](56);
           console.warn('Gagal kirim notifikasi (non blocking):', _context3.t1);
 
-        case 71:
+        case 77:
           req.flash('success_msg', "Status reservasi berhasil diperbarui menjadi ".concat(status, "."));
           return _context3.abrupt("return", res.redirect('/admin/reservasi'));
 
-        case 75:
-          _context3.prev = 75;
+        case 81:
+          _context3.prev = 81;
           _context3.t2 = _context3["catch"](0);
           console.error('ERR POST /admin/reservasi/update-status:', _context3.t2);
           req.flash('error_msg', 'Gagal memperbarui status reservasi.');
           return _context3.abrupt("return", res.redirect('/admin/reservasi'));
 
-        case 80:
+        case 86:
         case "end":
           return _context3.stop();
       }
     }
-  }, null, null, [[0, 75], [48, 53], [56, 68]]);
+  }, null, null, [[0, 81], [48, 53], [56, 74]]);
 }); // ============================
 // UPDATE FORM LENGKAP (STATUS + CATATAN)
 // ============================
 
 router.post('/update/:id', function _callee4(req, res) {
-  var id, _req$body, status, catatan, dataToUpdate, rows, r, status_awal, id_jadwal, notif;
+  var id, _req$body, status, catatan, dataToUpdate, rows, r, status_awal, id_jadwal, tanggalMain, jamMulai, jamSelesai, metodeText, isi_pesan, notif;
 
   return regeneratorRuntime.async(function _callee4$(_context4) {
     while (1) {
@@ -437,44 +465,70 @@ router.post('/update/:id', function _callee4(req, res) {
 
         case 37:
           if (!r.id_user) {
-            _context4.next = 42;
+            _context4.next = 48;
             break;
+          }
+
+          tanggalMain = r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }) : '-';
+          jamMulai = r.jam_mulai ? r.jam_mulai.substring(0, 5) : '-';
+          jamSelesai = r.jam_selesai ? r.jam_selesai.substring(0, 5) : '-';
+          metodeText = '';
+
+          if (r.pembayaran_metode === 'cod') {
+            metodeText = ' dengan metode COD (bayar di tempat)';
+          } else if (r.pembayaran_metode === 'transaksi') {
+            metodeText = ' dengan metode Transfer Bank';
+          }
+
+          if (status === 'disetujui') {
+            isi_pesan = "Booking Anda untuk arena ".concat(r.nama_arena, " pada ").concat(tanggalMain, " ") + "pukul ".concat(jamMulai, "\u2013").concat(jamSelesai).concat(metodeText, " telah disetujui.");
+          } else if (status === 'ditolak') {
+            isi_pesan = "Maaf, booking Anda untuk arena ".concat(r.nama_arena, " pada ").concat(tanggalMain, " ") + "pukul ".concat(jamMulai, "\u2013").concat(jamSelesai).concat(metodeText, " ditolak.") + (catatan ? " Alasan: ".concat(catatan) : '');
+          } else if (status === 'selesai') {
+            isi_pesan = "Terima kasih telah bermain di ".concat(r.nama_arena, " pada ").concat(tanggalMain, " ") + "pukul ".concat(jamMulai, "\u2013").concat(jamSelesai, ".");
+          } else {
+            isi_pesan = "Status booking Anda untuk arena ".concat(r.nama_arena, " pada ").concat(tanggalMain, " ") + "pukul ".concat(jamMulai, "\u2013").concat(jamSelesai).concat(metodeText, " telah berubah menjadi ").concat(status, ".");
           }
 
           notif = {
             id_user: r.id_user,
             judul: "Status Booking: ".concat(status.toUpperCase()),
-            isi_pesan: status === 'disetujui' ? "Booking Anda untuk arena ".concat(r.nama_arena, " telah disetujui.") : status === 'ditolak' ? "Maaf, booking Anda untuk arena ".concat(r.nama_arena, " ditolak.") : status === 'selesai' ? "Terima kasih telah bermain di ".concat(r.nama_arena, ".") : "Status booking Anda telah berubah menjadi ".concat(status, "."),
+            isi_pesan: isi_pesan,
             jenis_notif: 'status',
             tipe: 'booking',
             dibaca: 0
           };
 
           if (!(typeof Model_Notifikasi.Store === 'function')) {
-            _context4.next = 42;
+            _context4.next = 48;
             break;
           }
 
-          _context4.next = 42;
+          _context4.next = 48;
           return regeneratorRuntime.awrap(Model_Notifikasi.Store(notif));
 
-        case 42:
+        case 48:
           req.flash('success_msg', 'Status reservasi berhasil diperbarui.');
           return _context4.abrupt("return", res.redirect('/admin/reservasi'));
 
-        case 46:
-          _context4.prev = 46;
+        case 52:
+          _context4.prev = 52;
           _context4.t1 = _context4["catch"](1);
           console.error('ERR POST /admin/reservasi/update:', _context4.t1);
           req.flash('error_msg', 'Gagal memperbarui reservasi: ' + _context4.t1.message);
           return _context4.abrupt("return", res.redirect('/admin/reservasi/edit/' + id));
 
-        case 51:
+        case 57:
         case "end":
           return _context4.stop();
       }
     }
-  }, null, null, [[1, 46], [29, 34]]);
+  }, null, null, [[1, 52], [29, 34]]);
 }); // ============================
 // DELETE RESERVASI
 // ============================
